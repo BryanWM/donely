@@ -1,0 +1,37 @@
+/* Paleta DONELY: 5 tons por cor (gerado por scripts/paleta.js, não edite à mão) */
+:root {
+  /* Verde-tinta: base no tom 900 */
+  --tinta-100: #ECF6F1;
+  --tinta-300: #B2C2B9;
+  --tinta-500: #7B9085;
+  --tinta-700: #486154;
+  --tinta-900: #173527;
+  /* Verde do check: base no tom 500 */
+  --check-100: #DFFCE6;
+  --check-300: #8ECD9F;
+  --check-500: #2F9E5B;
+  --check-700: #086A36;
+  --check-900: #003819;
+  /* Lima: base no tom 300 */
+  --lima-100: #E6FCDA;
+  --lima-300: #8BD15A;
+  --lima-500: #609B34;
+  --lima-700: #386708;
+  --lima-900: #193700;
+  /* Papel: base no tom 100 */
+  --papel-100: #F5F8EE;
+  --papel-300: #BEC1B8;
+  --papel-500: #8A8C85;
+  --papel-700: #595B55;
+  --papel-900: #2D2E2A;
+
+  /* Papéis de uso */
+  --cor-fundo: var(--papel-100);
+  --cor-superficie: #FFFFFF;
+  --cor-borda: var(--papel-300);
+  --cor-texto: var(--tinta-900);
+  --cor-texto-apagado: var(--papel-700);
+  --cor-acao: var(--check-700);
+  --cor-sucesso: var(--check-500);
+  --cor-destaque: var(--lima-300);
+}
