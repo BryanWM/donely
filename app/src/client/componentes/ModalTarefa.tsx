@@ -48,7 +48,7 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
   const faltam = diasParaArquivar(t, config.arquivarAposDias, hoje);
   const feitos = t.checklist.filter((i) => i.feito).length;
   // Só em Fazendo se trabalha no card: em A fazer ainda não começou, em Concluído já terminou.
-  const leitura = t.status !== 'fazendo';
+  const leitura = t.status === 'concluido';
   const nomesClientes = [...new Set([...clientes.map((c) => c.nome), ...(t.cliente ? [t.cliente] : [])])].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   const tipos = [...new Set([...config.tipos, ...(t.tipo ? [t.tipo] : [])])];
 
@@ -96,8 +96,8 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
           </div>
 
           {t.status === 'a_fazer' && (
-            <div className="aviso-leitura">
-              <span><Icone nome="alerta" tamanho={15} />Só leitura enquanto estiver em “A fazer”.</span>
+            <div className="aviso-leitura aviso-neutro">
+              <span><Icone nome="alerta" tamanho={15} />Ainda não começou.</span>
               <button type="button" className="btn principal pequeno" onClick={() => acoes.mover(t.id, 'fazendo')}><Icone nome="play" tamanho={14} />Iniciar tarefa</button>
             </div>
           )}
@@ -232,6 +232,8 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
               </dl>
               <ol className="historico">{[...t.eventos].reverse().map((ev, i) => <li key={i}><span>{dataHora(ev.em)}</span>{ev.texto}</li>)}</ol>
             </details>
+            {/* iniciou por engano: devolve sem precisar concluir */}
+            {t.status === 'fazendo' && <button type="button" className="excluir voltar" onClick={() => acoes.mover(t.id, 'a_fazer')}>Voltar para A fazer</button>}
             <button type="button" className={`excluir ${confirmarExclusao ? 'confirmando' : ''}`} onClick={excluir}>{confirmarExclusao ? 'Clique de novo para confirmar a exclusão' : 'Excluir tarefa'}</button>
           </div>
         </aside>

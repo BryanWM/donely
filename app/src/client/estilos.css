@@ -586,6 +586,9 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .lado-rodape .historico { padding: 8px 0 0; }
 .excluir { all: unset; cursor: pointer; margin-top: 6px; padding: 4px 0; font-size: 13px; color: var(--texto-3); }
 .excluir:hover, .excluir.confirmando { color: var(--erro); }
+.excluir.voltar { display: block; }
+.excluir.voltar:hover { color: var(--acao); }
+.aviso-neutro { background: var(--preenchimento); color: var(--texto-2); }
 .card .aviso-leitura { margin: -4px 0 0; }
 .checklist:empty { display: none; }
 /* briefing editável (em Fazendo) */

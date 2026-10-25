@@ -11,7 +11,7 @@ Abaixo ficam as abas, em forma de pasta:
 | Aba | O que guarda |
 |---|---|
 | **A fazer** | Tarefas que ainda não começaram. Toda tarefa nova entra aqui. |
-| **Fazendo** | O que está em andamento. É a única etapa em que o card é editável. |
+| **Fazendo** | O que está em andamento. Iniciou por engano? O card tem **Voltar para A fazer**. |
 | **Concluído** | O que terminou. Fica aqui alguns dias e depois vai para o Histórico. |
 | **Não planejadas** | Pedidos que chegaram fora do plano (veja [Captura rápida](#captura-rápida)). |
 | **Histórico** | Tudo o que foi concluído, com relatório por período. |
@@ -42,14 +42,14 @@ Cada linha mostra tarefa, cliente, tipo, prioridade, prazo, itens do checklist e
 
 O card segue a ordem do trabalho:
 
-1. **Briefing:** o que precisa ser feito. Editável em tarefas do DONELY em Fazendo.
+1. **Briefing:** o que precisa ser feito. Editável até a tarefa ser concluída.
 2. **Referências:** imagens, PDFs e documentos que orientam o trabalho. Arraste, cole (`Ctrl+V`) ou clique para adicionar.
 3. **Checklist:** itens com barra de progresso. Digite e aperte `Enter` para adicionar.
 4. **Material produzido:** os arquivos do resultado.
 
 Na coluna da direita ficam cliente, tipo, prioridade, prazo, o histórico de eventos e o botão de excluir, que pede um segundo clique.
 
-O card só é editável em Fazendo. Nas outras etapas ele mostra os dados sem deixar mudar.
+O card é editável em A fazer e em Fazendo. Em Concluído ele mostra os dados sem deixar mudar.
 
 ## Captura rápida
 
