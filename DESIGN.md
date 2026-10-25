@@ -223,7 +223,7 @@ A forma assinatura é a **aba de pasta suspensa**: canto superior arredondado de
 
 ### Botões
 - **Forma:** cantos suaves (10px; pequenos, 8px), altura 36px (pequenos, 30px).
-- **Principal:** fundo verde do check escuro e texto papel, peso 600. Um por tela: "Nova tarefa", "Criar tarefa", "Importar tarefas".
+- **Principal:** fundo verde do check escuro e texto papel, peso 600. Um por tela: "Nova tarefa", "Criar tarefa", "Copiar relatório".
 - **Padrão:** fundo na camada de 5%, hover na de 8%, e encolhe para 96% ao pressionar.
 - **Contorno:** fundo transparente com contorno de 1px na cor de ação. É o estilo das ações da linha.
 - **Texto:** só a cor de ação, para ações de cabeçalho de janela ("Fechar", "Salvar", "Cancelar").
@@ -233,7 +233,7 @@ A forma assinatura é a **aba de pasta suspensa**: canto superior arredondado de
 Um só padrão em todas as abas: Iniciar, Concluir e Arquivar. Têm a largura da coluna, ícone de 13px e texto curto. Em repouso ficam neutras (texto secundário, contorno na tinta a 45%); a linha sob o mouse ou com foco as pinta de verde. Enquanto a ação roda, o botão fica desativado.
 
 ### Selos e chips
-- **Selos** (pílula, 22px): "Atrasada · 2 dias" em vermelho, "Vence hoje" em âmbar, "Aprovado" em verde suave, "Ajuste pedido" em âmbar, "Registro" neutro. Data futura não vira selo: é texto simples.
+- **Selos** (pílula, 22px): "Atrasada · 2 dias" em vermelho e "Vence hoje" em âmbar. Data futura não vira selo: é texto simples.
 - **Chips** (6px, camada de 5%): o tipo de entrega na lista e os tipos editáveis nas configurações.
 
 ### Linhas de tarefa

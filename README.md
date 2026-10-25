@@ -49,7 +49,7 @@ Tudo fica na sua máquina, na pasta `app/dados/`, sem nuvem e sem conta. Faça b
 app/                  o quadro (Node + Hono + React + SQLite)
 brand/                logos, ícones, tokens de cor (brand/tokens/cores.css), especificação (BRAND.md) e o logo do Donko
 docs/                 documentação do projeto
-scripts/              geradores da marca (npm run marca) e da paleta (npm run paleta)
+scripts/              atalho da área de trabalho (iniciar.sh, criar-atalho.sh) e geradores da marca e da paleta
 DESIGN.md             sistema de design
 ```
 
