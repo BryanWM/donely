@@ -69,7 +69,7 @@ Reúne tarefas e demandas concluídas. O período e os números ficam num painel
 - **Números do período:** tarefas concluídas, não planejadas e o tempo gasto fora do plano.
 - **Mostrar:** tudo, tarefas ou não planejadas, com a contagem de cada um, ao lado da busca.
 - **Copiar relatório:** copia o período em texto, pronto para colar numa mensagem.
-- **Imprimir ou PDF:** abre a impressão do navegador com o relatório formatado.
+- **PDF:** abre a impressão do navegador com o relatório do período: cabeçalho com o período e a data em que foi gerado, os números, e uma tabela por dia (hora, o que foi feito, cliente ou quem pediu, tipo e tempo). Respeita o filtro e a busca da tela, numera as páginas e lê bem também em preto e branco. Para salvar o arquivo, escolha "Salvar como PDF" no destino da impressão.
 - **Ações da linha:** ao passar o mouse numa tarefa aparecem **Voltar ao quadro** (devolve para A fazer) e **Excluir** (pede um segundo clique). Clicar no título abre o card.
 
 ## Configurações

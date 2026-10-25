@@ -377,7 +377,6 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .sugestao.ativa { background: var(--acao); color: var(--acao-texto); }
 
 /* ---------- histórico ---------- */
-.titulo-impressao { display: none; }
 
 /* ---------- histórico: painel fixo à esquerda, lista por dia com a largura toda ---------- */
 .historico-tela { flex: 1; min-height: 0; display: flex; }
@@ -428,7 +427,11 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 
 /* Imprimir ou PDF: só o relatório, sem controles, em fundo branco */
 @media print {
-  @page { margin: 14mm; }
+  @page {
+    size: A4; margin: 16mm 14mm 18mm;
+    @bottom-left { content: "DONELY · Relatório de atividades"; font: 8.5pt Outfit, sans-serif; color: #6b776d; }
+    @bottom-right { content: "Página " counter(page) " de " counter(pages); font: 8.5pt Outfit, sans-serif; color: #6b776d; }
+  }
   :root { color-scheme: light !important; }
   html, body, #raiz { height: auto; }
   body { min-width: 0; background: #fff; }
@@ -436,13 +439,35 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
   .faixa, .so-tela, .aviso, .fundo-modal, .modal { display: none !important; }
   .pagina { max-width: none; padding: 0; }
   .cartao-principal { display: block; box-shadow: none; border-radius: 0; background: none; }
-  .titulo-impressao { display: block; margin: 0 0 12px; font-size: 18px; }
-  .historico-tela { display: block; }
-  .historico-lado { width: auto; padding: 0 0 12px; border: 0; overflow: visible; }
-  .historico-numeros { max-width: 360px; }
-  .historico-lista { overflow: visible; padding: 0; }
-  .historico-item { break-inside: avoid; }
+  /* no Histórico, a tela some e sai só o relatório (em tabela, legível em preto e branco) */
+  .historico-tela { display: none; }
+  .relatorio { display: block; color: #173527; font-size: 10pt; line-height: 1.4; }
 }
+
+/* ---------- relatório impresso do Histórico ---------- */
+@media screen { .relatorio { display: none; } } /* na impressão quem aparece é ele */
+.relatorio-cab { display: flex; align-items: center; gap: 12px; padding-bottom: 10pt; border-bottom: 1.5pt solid #173527; }
+.relatorio-cab img { flex: none; }
+.relatorio-cab h1 { font-size: 17pt; font-weight: 700; line-height: 1.15; }
+.relatorio-cab p { margin: 2pt 0 0; font-size: 10.5pt; color: #3f5a4c; }
+.relatorio-cab .relatorio-gerado { margin: 0 0 0 auto; text-align: right; font-size: 8.5pt; color: #6b776d; line-height: 1.5; }
+.relatorio-numeros { display: flex; gap: 28pt; margin: 12pt 0 16pt; }
+.relatorio-numeros div { display: flex; flex-direction: column-reverse; }
+.relatorio-numeros dt { font-size: 8.5pt; color: #6b776d; }
+.relatorio-numeros dd { margin: 0; font-size: 16pt; font-weight: 800; font-variant-numeric: tabular-nums; }
+.relatorio-dia { width: 100%; margin-bottom: 14pt; border-collapse: collapse; table-layout: fixed; }
+.relatorio-dia caption { caption-side: top; padding: 0 0 4pt; text-align: left; font-size: 11.5pt; font-weight: 700; break-after: avoid; }
+.relatorio-dia thead { display: table-header-group; } /* repete o cabeçalho quando um dia passa de página */
+.relatorio-dia th { padding: 3pt 6pt; border-bottom: 0.75pt solid #9aa89f; text-align: left; font-size: 8pt; font-weight: 600; color: #6b776d; text-transform: none; }
+.relatorio-dia td { padding: 4pt 6pt; border-bottom: 0.5pt solid #d5ddd7; vertical-align: top; overflow-wrap: anywhere; }
+.relatorio-dia tr { break-inside: avoid; }
+.relatorio-dia :is(th, td):nth-child(1) { width: 11%; font-variant-numeric: tabular-nums; }
+.relatorio-dia :is(th, td):nth-child(2) { width: 43%; font-weight: 600; }
+.relatorio-dia :is(th, td):nth-child(3) { width: 20%; }
+.relatorio-dia :is(th, td):nth-child(4) { width: 15%; }
+.relatorio-dia :is(th, td):nth-child(5) { width: 11%; text-align: right; font-variant-numeric: tabular-nums; }
+.relatorio-dia td strong { font-weight: 600; }
+.relatorio-vazio { margin: 16pt 0; color: #6b776d; }
 
 /* ---------- nova tarefa: rodapé, validação e anexos ---------- */
 .modal-rodape { flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 12px 16px; background: var(--superficie); border-top: 1px solid var(--separador); }

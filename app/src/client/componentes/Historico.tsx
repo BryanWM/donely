@@ -1,15 +1,25 @@
 import { useEffect, useState } from 'react';
 import {
-  dataCurta, deslocarPeriodo, formatarDuracao, periodoDe, registrosDoPeriodo, rotuloDia, somarDias, textoRelatorio,
+  deslocarPeriodo, formatarDuracao, periodoDe, registrosDoPeriodo, rotuloDia, somarDias, textoRelatorio,
   type Demanda, type Periodo, type Tarefa, type TipoPeriodo,
 } from '../../shared/dominio';
 import type { Acoes } from '../acoes';
+import logo from '../../../../brand/donely-icone.svg';
 import { Icone } from './Icone';
 
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const TIPOS: [TipoPeriodo, string][] = [['semana', 'Semana'], ['mes', 'Mês'], ['periodo', 'Período']];
 const MOSTRAR = [['tudo', 'Tudo'], ['tarefa', 'Tarefas'], ['demanda', 'Não planejadas']] as const;
 const hora = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+const data = (dia: string) => { const [a, m, d] = dia.split('-').map(Number); return new Date(a, m - 1, d); };
+/** "19 a 25 de outubro de 2026", "28 de setembro a 4 de outubro de 2026" ou as duas datas completas. */
+function periodoPorExtenso({ inicio, fim }: Periodo) {
+  const i = data(inicio), f = data(fim), mes = (x: Date) => MESES[x.getMonth()];
+  if (inicio === fim) return `${f.getDate()} de ${mes(f)} de ${f.getFullYear()}`;
+  if (i.getFullYear() !== f.getFullYear()) return `${i.getDate()} de ${mes(i)} de ${i.getFullYear()} a ${f.getDate()} de ${mes(f)} de ${f.getFullYear()}`;
+  return `${i.getDate()}${i.getMonth() === f.getMonth() ? '' : ` de ${mes(i)}`} a ${f.getDate()} de ${mes(f)} de ${f.getFullYear()}`;
+}
+const diaPorExtenso = (dia: string) => data(dia).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, (c) => c.toUpperCase());
 
 interface Props {
   tarefas: Tarefa[]; demandas: Demanda[]; hoje: string; acoes: Acoes;
@@ -75,6 +85,7 @@ export function Historico({ tarefas, demandas, hoje, acoes, onAbrir, onAviso }: 
   }
 
   return (
+    <>
     <div className="historico-tela">
       <aside className="historico-lado" aria-label="Período e filtros">
         <div className="segmentado so-tela" role="radiogroup" aria-label="Tipo de período">
@@ -107,8 +118,6 @@ export function Historico({ tarefas, demandas, hoje, acoes, onAbrir, onAviso }: 
           </ol>
         )}
 
-        {/* só aparece na impressão */}
-        <h2 className="titulo-impressao">Relatório de atividades: {dataCurta(periodo.inicio)} a {dataCurta(periodo.fim)}</h2>
         <ul className="lista-ios historico-numeros" aria-label="Resumo do período">
           <li className="linha-ios"><span className="rotulo">{nTarefas === 1 ? 'Tarefa concluída' : 'Tarefas concluídas'}</span><strong>{nTarefas}</strong></li>
           <li className="linha-ios"><span className="rotulo">{nDemandas === 1 ? 'Não planejada' : 'Não planejadas'}</span><strong>{nDemandas}</strong></li>
@@ -177,5 +186,40 @@ export function Historico({ tarefas, demandas, hoje, acoes, onAbrir, onAviso }: 
         )}
       </section>
     </div>
+
+    {/* Só na impressão (Imprimir ou PDF): relatório próprio, em tabela, que lê bem também em preto e branco. Segue os filtros da tela. */}
+    <section className="relatorio" aria-label="Relatório para impressão">
+      <header className="relatorio-cab">
+        <img src={logo} alt="" width={34} height={34} />
+        <div>
+          <h1>Relatório de atividades</h1>
+          <p>{periodoPorExtenso(periodo)}{mostrar !== 'tudo' && ` · só ${mostrar === 'tarefa' ? 'tarefas' : 'não planejadas'}`}{q && ` · busca: “${busca.trim()}”`}</p>
+        </div>
+        <p className="relatorio-gerado">DONELY<br />Gerado em {new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</p>
+      </header>
+      <dl className="relatorio-numeros">
+        <div><dt>{nTarefas === 1 ? 'Tarefa concluída' : 'Tarefas concluídas'}</dt><dd>{nTarefas}</dd></div>
+        <div><dt>{nDemandas === 1 ? 'Não planejada' : 'Não planejadas'}</dt><dd>{nDemandas}</dd></div>
+        <div><dt>Tempo fora do plano</dt><dd>{formatarDuracao(tempo)}</dd></div>
+      </dl>
+      {registros.length ? dias.map((dia) => (
+        <table key={dia} className="relatorio-dia">
+          <caption>{diaPorExtenso(dia)}</caption>
+          <thead><tr><th>Hora</th><th>O que foi feito</th><th>Cliente ou quem pediu</th><th>Tipo</th><th>Tempo</th></tr></thead>
+          <tbody>
+            {registros.filter((r) => r.dia === dia).map((r) => (
+              <tr key={r.tipo + r.id}>
+                <td>{hora(r.concluidoEm)}</td>
+                <td>{r.titulo}</td>
+                <td>{r.quem || '—'}</td>
+                <td>{r.tipo === 'tarefa' ? r.categoria || 'Tarefa' : <strong>Não planejada</strong>}</td>
+                <td>{r.tempoMs ? formatarDuracao(r.tempoMs) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )) : <p className="relatorio-vazio">Nada concluído neste período.</p>}
+    </section>
+    </>
   );
 }
