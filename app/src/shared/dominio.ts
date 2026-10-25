@@ -19,7 +19,6 @@ export const TIPOS_PADRAO = ['Post', 'Carrossel', 'Vídeo', 'Arte', 'Documento',
 export const OPCOES_ARQUIVAR = [1, 3, 7, 14] as const;
 
 export interface ItemChecklist { id: string; texto: string; feito: boolean }
-export interface LinkTarefa { id: string; url: string; rotulo: string }
 export interface Evento { em: string; texto: string }
 /** Arquivo do briefing. Os bytes ficam no servidor, em /api/anexos/:id. */
 export type PapelAnexo = 'material' | 'referencia';
@@ -45,7 +44,6 @@ export interface Tarefa {
   criadoEm: string;
   atualizadoEm: string;
   checklist: ItemChecklist[];
-  links: LinkTarefa[];
   eventos: Evento[];
   anexos: Anexo[];
 }

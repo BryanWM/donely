@@ -579,10 +579,6 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .card-lado .props .rotulo, .card-lado .props label { font-size: 13.5px; color: var(--texto-2); }
 .card-lado .props .valor { font-size: 14px; color: var(--texto); }
 .card-lado .props .segmentado button { padding: 0 8px; font-size: 12.5px; }
-.lado-titulo { margin-bottom: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--texto-3); }
-.lado-links { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; }
-.lado-links a { display: inline-flex; align-items: center; gap: 7px; color: var(--acao); text-decoration: none; overflow-wrap: anywhere; }
-.lado-links a:hover { text-decoration: underline; }
 .lado-concluida { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; font-size: 13.5px; color: var(--texto-2); }
 .lado-rodape { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-top: 12px; border-top: 1px solid var(--separador); }
 .lado-rodape .registro-detalhes { width: 100%; }

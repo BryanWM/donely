@@ -30,15 +30,13 @@ O código fica em `app/src/server/api.ts`.
 
 **Prioridades:** `urgente`, `alta`, `normal`.
 
-### Checklist e links
+### Checklist
 
 | Método e rota | Corpo | O que faz |
 |---|---|---|
 | `POST /tarefas/:id/checklist` | `texto` | Adiciona um item. |
 | `PATCH /tarefas/:id/checklist/:item` | `feito` (verdadeiro ou falso) | Marca ou desmarca. |
 | `DELETE /tarefas/:id/checklist/:item` | — | Remove o item. |
-| `POST /tarefas/:id/links` | `url` (http ou https), `rotulo` | Adiciona um link. |
-| `DELETE /tarefas/:id/links/:link` | — | Remove o link. |
 
 ### Anexos
 

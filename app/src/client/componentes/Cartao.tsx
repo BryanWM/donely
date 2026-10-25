@@ -60,8 +60,7 @@ export function Cartao({ tarefa: t, hoje, arquivarAposDias, onAbrir, onIniciar, 
       <span className="cel">{concluida ? <span className="data-prazo">{faltam === 1 ? 'Amanhã' : `Em ${faltam} dias`}</span> : (situacaoPrazo(t, hoje) ? <SeloPrazo tarefa={t} hoje={hoje} /> : vazio)}</span>
       <span className="cel cel-itens">
         {t.checklist.length > 0 && <span><Icone nome="lista" tamanho={14} />{feitos}/{t.checklist.length}</span>}
-        {t.links.length > 0 && <span><Icone nome="link" tamanho={14} />{t.links.length}</span>}
-        {!t.checklist.length && !t.links.length && vazio}
+        {!t.checklist.length && vazio}
       </span>
       <span className="cel cel-acoes">
         {concluida && <button type="button" className="btn pequeno contorno cartao-acao" disabled={ocupado} onClick={agir(onArquivar, 'historico')} aria-label={`Arquivar ${t.titulo} agora`}><Icone nome="arquivo" tamanho={13} />Arquivar</button>}

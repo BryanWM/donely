@@ -76,6 +76,8 @@ const MIGRACOES: string[] = [
    CREATE INDEX idx_anexos_tarefa ON anexos (tarefa_id);`,
   // O cliente fica só com o nome: o link da base de cada um saiu.
   `ALTER TABLE clientes DROP COLUMN base_url;`,
+  // Links da tarefa saíram: não havia como adicioná-los pela interface; um link vai no briefing, que fica clicável.
+  `DROP TABLE links;`,
 ];
 
 /** Abre (ou cria) o banco e aplica as migrações pendentes. Use ':memory:' nos testes. */

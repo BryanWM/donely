@@ -52,11 +52,6 @@ describe('tarefas', () => {
     expect((await pedir('PATCH', `/tarefas/${t.id}`, { titulo: 'y' })).status).toBe(404);
   });
 
-  it('só aceita links http e https', async () => {
-    const t = await (await pedir('POST', '/tarefas', { titulo: 'x' })).json();
-    expect((await pedir('POST', `/tarefas/${t.id}/links`, { url: 'javascript:alert(1)' })).status).toBe(400);
-    expect((await pedir('POST', `/tarefas/${t.id}/links`, { url: 'https://drive.google.com/x' })).status).toBe(201);
-  });
 });
 
 describe('clientes e configuração', () => {

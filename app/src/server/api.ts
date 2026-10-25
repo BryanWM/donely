@@ -4,7 +4,6 @@ import { diaLocal, LIMITE_ANEXO, OPCOES_ARQUIVAR, PRIORIDADES, PRIORIDADES_DEMAN
 import type { Repositorio } from './repositorio';
 
 const dia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use a data no formato AAAA-MM-DD');
-const url = z.string().trim().url('Endereço inválido').refine((u) => /^https?:\/\//i.test(u), 'Use um endereço que comece com http:// ou https://');
 const texto = (max: number) => z.string().trim().max(max);
 
 const novaTarefa = z.object({
@@ -149,15 +148,6 @@ export function criarApi(repo: Repositorio, { desligar, criarAtalho }: Sistema =
     return t ? c.json(t) : naoEncontrada(c);
   });
 
-  api.post('/tarefas/:id/links', async (c) => {
-    const d = await corpo(c, z.object({ url, rotulo: texto(120).optional() })); if (d instanceof Response) return d;
-    const t = repo.adicionarLink(c.req.param('id'), d.url, d.rotulo ?? '');
-    return t ? c.json(t, 201) : naoEncontrada(c);
-  });
-  api.delete('/tarefas/:id/links/:link', (c) => {
-    const t = repo.removerLink(c.req.param('id'), c.req.param('link'));
-    return t ? c.json(t) : naoEncontrada(c);
-  });
 
   api.post('/clientes', async (c) => {
     const d = await corpo(c, z.object({ nome: texto(120).min(1, 'Dê um nome ao cliente') })); if (d instanceof Response) return d;

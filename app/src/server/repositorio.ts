@@ -32,10 +32,9 @@ export class Repositorio {
   listarTarefas(): Tarefa[] {
     const linhas = this.db.prepare('SELECT * FROM tarefas ORDER BY criado_em').all() as Linha[];
     const checklist = this.db.prepare('SELECT * FROM checklist ORDER BY posicao').all() as Linha[];
-    const links = this.db.prepare('SELECT * FROM links ORDER BY posicao').all() as Linha[];
     const eventos = this.db.prepare('SELECT * FROM eventos ORDER BY id').all() as Linha[];
     const anexos = this.db.prepare(`SELECT ${CAMPOS_ANEXO} FROM anexos ORDER BY criado_em`).all() as Linha[];
-    return linhas.map((l) => this.montar(l, checklist, links, eventos, anexos));
+    return linhas.map((l) => this.montar(l, checklist, eventos, anexos));
   }
 
   obterTarefa(id: string): Tarefa | null {
@@ -43,10 +42,10 @@ export class Repositorio {
     if (!l) return null;
     const porTarefa = (tabela: string, ordem: string) => this.db.prepare(`SELECT * FROM ${tabela} WHERE tarefa_id = ? ORDER BY ${ordem}`).all(id) as Linha[];
     const anexos = this.db.prepare(`SELECT ${CAMPOS_ANEXO} FROM anexos WHERE tarefa_id = ? ORDER BY criado_em`).all(id) as Linha[];
-    return this.montar(l, porTarefa('checklist', 'posicao'), porTarefa('links', 'posicao'), porTarefa('eventos', 'id'), anexos);
+    return this.montar(l, porTarefa('checklist', 'posicao'), porTarefa('eventos', 'id'), anexos);
   }
 
-  private montar(l: Linha, checklist: Linha[], links: Linha[], eventos: Linha[], anexos: Linha[]): Tarefa {
+  private montar(l: Linha, checklist: Linha[], eventos: Linha[], anexos: Linha[]): Tarefa {
     const id = String(l.id);
     return {
       id,
@@ -55,7 +54,6 @@ export class Repositorio {
       concluidoEm: (l.concluido_em as string) ?? null, arquivadaEm: (l.arquivada_em as string) ?? null,
       criadoEm: String(l.criado_em), atualizadoEm: String(l.atualizado_em),
       checklist: checklist.filter((c) => c.tarefa_id === id).map((c) => ({ id: String(c.id), texto: String(c.texto), feito: Number(c.feito) === 1 })),
-      links: links.filter((c) => c.tarefa_id === id).map((c) => ({ id: String(c.id), url: String(c.url), rotulo: String(c.rotulo) })),
       eventos: eventos.filter((c) => c.tarefa_id === id).map((c) => ({ em: String(c.em), texto: String(c.texto) })),
       anexos: anexos.filter((c) => c.tarefa_id === id).map((c): Anexo => ({ id: String(c.id), nome: String(c.nome), tipo: String(c.tipo), tamanho: Number(c.tamanho), papel: c.papel as PapelAnexo })),
     };
@@ -140,7 +138,7 @@ export class Repositorio {
     return Number(this.db.prepare('DELETE FROM tarefas WHERE id = ?').run(id).changes) > 0;
   }
 
-  // ---------- checklist e links ----------
+  // ---------- checklist ----------
 
   adicionarItem(tarefaId: string, texto: string): Tarefa | null {
     if (!this.obterTarefa(tarefaId)) return null;
@@ -159,21 +157,6 @@ export class Repositorio {
 
   removerItem(tarefaId: string, itemId: string): Tarefa | null {
     const r = this.db.prepare('DELETE FROM checklist WHERE id = ? AND tarefa_id = ?').run(itemId, tarefaId);
-    if (!Number(r.changes)) return null;
-    this.tocar(tarefaId);
-    return this.obterTarefa(tarefaId);
-  }
-
-  adicionarLink(tarefaId: string, url: string, rotulo: string): Tarefa | null {
-    if (!this.obterTarefa(tarefaId)) return null;
-    const pos = Number((this.db.prepare('SELECT COALESCE(MAX(posicao), -1) + 1 AS p FROM links WHERE tarefa_id = ?').get(tarefaId) as { p: number }).p);
-    this.db.prepare('INSERT INTO links (id, tarefa_id, url, rotulo, posicao) VALUES (?, ?, ?, ?, ?)').run(randomUUID(), tarefaId, url, rotulo, pos);
-    this.tocar(tarefaId);
-    return this.obterTarefa(tarefaId);
-  }
-
-  removerLink(tarefaId: string, linkId: string): Tarefa | null {
-    const r = this.db.prepare('DELETE FROM links WHERE id = ? AND tarefa_id = ?').run(linkId, tarefaId);
     if (!Number(r.changes)) return null;
     this.tocar(tarefaId);
     return this.obterTarefa(tarefaId);

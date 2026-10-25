@@ -30,7 +30,7 @@ Ao clicar numa ação, a linha "viaja" até a aba de destino e o contador dela p
 
 ## A lista
 
-Cada linha mostra tarefa, cliente, tipo, prioridade, prazo, itens (checklist e links) e a ação da etapa. Clique na linha para abrir o card.
+Cada linha mostra tarefa, cliente, tipo, prioridade, prazo, itens do checklist e a ação da etapa. Clique na linha para abrir o card.
 
 - **Ordem:** atrasadas primeiro, depois por prioridade (Urgente, Alta, Normal) e por prazo. Em Concluído, as mais recentes no topo.
 - **Faixa colorida à esquerda:** vermelha para atrasada ou urgente, âmbar para alta.
@@ -47,7 +47,7 @@ O card segue a ordem do trabalho:
 3. **Checklist:** itens com barra de progresso. Digite e aperte `Enter` para adicionar.
 4. **Material produzido:** os arquivos do resultado.
 
-Na coluna da direita ficam cliente, tipo, prioridade, prazo, os links, quando a tarefa tem, o histórico de eventos e o botão de excluir, que pede um segundo clique.
+Na coluna da direita ficam cliente, tipo, prioridade, prazo, o histórico de eventos e o botão de excluir, que pede um segundo clique.
 
 O card só é editável em Fazendo. Nas outras etapas ele mostra os dados sem deixar mudar.
 
@@ -83,8 +83,8 @@ Reúne tarefas e demandas concluídas. O período e os números ficam num painel
 
 Tudo fica na sua máquina, sem nuvem e sem conta. Nada sai dela.
 
-- Os dados ficam na pasta `app/dados/`: tarefas, checklist, links, histórico, demandas, clientes, configurações e também os arquivos anexados.
-- Excluir uma tarefa apaga também o checklist, os links, os anexos e o histórico dela. Não há lixeira.
+- Os dados ficam na pasta `app/dados/`: tarefas, checklist, histórico, demandas, clientes, configurações e também os arquivos anexados.
+- Excluir uma tarefa apaga também o checklist, os anexos e o histórico dela. Não há lixeira.
 - Para usar outro arquivo de banco, defina `DONELY_DB` no `app/.env` (veja `app/.env.example`).
 
 ## Backup

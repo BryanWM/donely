@@ -217,15 +217,6 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
             )}
           </section>
 
-          {t.links.length > 0 && (
-            <section>
-              <h3 className="lado-titulo">Links</h3>
-              <ul className="lado-links">
-                {t.links.map((l) => <li key={l.id}><a href={l.url} target="_blank" rel="noopener noreferrer"><Icone nome="link" tamanho={14} />{l.rotulo || l.url}</a></li>)}
-              </ul>
-            </section>
-          )}
-
           {t.status === 'concluido' && (
             <section className="lado-concluida">
               <p>{arquivada ? 'Concluída. Está no Histórico.' : `Vai para o Histórico ${faltam === 1 ? 'amanhã' : `em ${faltam} dias`}.`}</p>

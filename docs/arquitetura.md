@@ -63,13 +63,12 @@ app/
 
 ## Banco de dados
 
-Um arquivo SQLite, com chaves estrangeiras ligadas e exclusão em cascata: apagar uma tarefa apaga o checklist, os links, os anexos e os eventos dela.
+Um arquivo SQLite, com chaves estrangeiras ligadas e exclusão em cascata: apagar uma tarefa apaga o checklist, os anexos e os eventos dela.
 
 | Tabela | O que guarda |
 |---|---|
 | `tarefas` | A tarefa: título, briefing (`notas`), cliente, tipo, prioridade, prazo, status, datas de conclusão e arquivamento. |
 | `checklist` | Itens do checklist de cada tarefa. |
-| `links` | Links de cada tarefa. |
 | `anexos` | Arquivos (o conteúdo fica no próprio banco). `papel` separa `material` de `referencia`. |
 | `eventos` | O histórico de cada tarefa ("Moveu para Fazendo", "Prazo: 27/10"…). |
 | `demandas` | Os pedidos da Captura rápida, com o tempo cronometrado. |
