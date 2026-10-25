@@ -63,8 +63,7 @@ As rotas de demanda devolvem a lista inteira, porque iniciar uma demanda pausa a
 
 | Método e rota | Corpo | O que faz |
 |---|---|---|
-| `POST /clientes` | `nome` (obrigatório), `baseUrl` | Cadastra um cliente. Devolve `201`, ou `409` se o nome já existe. |
-| `PATCH /clientes/:id` | `baseUrl` (ou `null` para tirar) | Muda o link da base. |
+| `POST /clientes` | `nome` (obrigatório) | Cadastra um cliente. Devolve `201`, ou `409` se o nome já existe. |
 | `DELETE /clientes/:id` | — | Remove o cliente. Devolve `204`. |
 | `PATCH /config` | qualquer um de `arquivarAposDias` (1, 3, 7 ou 14), `tipos`, `tema` (`claro`, `escuro` ou `auto`) | Salva as configurações enviadas. |
 

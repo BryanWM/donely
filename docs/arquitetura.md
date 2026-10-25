@@ -73,7 +73,7 @@ Um arquivo SQLite, com chaves estrangeiras ligadas e exclusão em cascata: apaga
 | `anexos` | Arquivos (o conteúdo fica no próprio banco). `papel` separa `material` de `referencia`. |
 | `eventos` | O histórico de cada tarefa ("Moveu para Fazendo", "Prazo: 27/10"…). |
 | `demandas` | Os pedidos da Captura rápida, com o tempo cronometrado. |
-| `clientes` | Clientes e o link da base de cada um. |
+| `clientes` | Os nomes dos clientes. |
 | `config` | Configurações: prazo de arquivamento, tema e tipos. |
 
 **Migrações:** ficam numa lista em `db.ts`, aplicadas em ordem na abertura do banco. Para mudar o banco, adicione uma migração nova ao fim da lista; nunca edite uma que já existe.

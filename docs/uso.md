@@ -47,7 +47,7 @@ O card segue a ordem do trabalho:
 3. **Checklist:** itens com barra de progresso. Digite e aperte `Enter` para adicionar.
 4. **Material produzido:** os arquivos do resultado.
 
-Na coluna da direita ficam cliente, tipo, prioridade, prazo, os links (incluindo a base do cliente, se cadastrada), o histórico de eventos e o botão de excluir, que pede um segundo clique.
+Na coluna da direita ficam cliente, tipo, prioridade, prazo, os links, quando a tarefa tem, o histórico de eventos e o botão de excluir, que pede um segundo clique.
 
 O card só é editável em Fazendo. Nas outras etapas ele mostra os dados sem deixar mudar.
 
@@ -76,7 +76,7 @@ Reúne tarefas e demandas concluídas. O período e os números ficam num painel
 
 - **Arquivar concluídas:** quanto tempo a tarefa fica em Concluído antes de ir para o Histórico (1, 3, 7 ou 14 dias).
 - **Tema:** claro, escuro ou automático (segue o sistema).
-- **Clientes:** cadastre os clientes e, se quiser, o link da base de cada um (por exemplo, a pasta ou a página do cliente). O link aparece em todas as tarefas daquele cliente.
+- **Clientes:** a lista de clientes que aparece na Nova tarefa e no filtro da lista. O cliente é opcional: uma tarefa pode não ter nenhum. Também dá para criar um cliente novo direto na Nova tarefa ou no card.
 - **Tipos de tarefa:** a lista de tipos de entrega (Post, Carrossel, Vídeo…), que você pode editar.
 
 ## Seus dados
