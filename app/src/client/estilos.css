@@ -403,8 +403,10 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .historico-numeros { background: var(--cartao-tarefa); }
 .historico-numeros strong { font-size: 17px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .historico-lista { flex: 1; min-width: 0; overflow-y: auto; overscroll-behavior: contain; padding: 24px 32px 40px; display: flex; flex-direction: column; gap: 22px; }
-.historico-ferramentas { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.historico-busca { flex: 1 1 260px; display: flex; }
+/* uma linha só: quem encolhe é a busca, os botões ficam do tamanho deles */
+.historico-ferramentas { display: flex; align-items: center; gap: 10px; }
+.historico-ferramentas > :not(.historico-busca) { flex: none; }
+.historico-busca { flex: 1 1 0; min-width: 140px; display: flex; }
 .historico-busca input { flex: 1; min-width: 0; height: 40px; font-size: 15px; }
 .historico-dia { scroll-margin-top: 12px; }
 .historico-dia h3 { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0 10px; border-bottom: 1px solid var(--separador); font-size: 15px; font-weight: 700; }
