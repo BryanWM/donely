@@ -47,7 +47,6 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
   const arquivada = estaArquivada(t, config.arquivarAposDias, hoje);
   const faltam = diasParaArquivar(t, config.arquivarAposDias, hoje);
   const feitos = t.checklist.filter((i) => i.feito).length;
-  const base = clientes.find((c) => c.nome === t.cliente)?.baseUrl;
   // Só em Fazendo se trabalha no card: em A fazer ainda não começou, em Concluído já terminou.
   const leitura = t.status !== 'fazendo';
   const nomesClientes = [...new Set([...clientes.map((c) => c.nome), ...(t.cliente ? [t.cliente] : [])])].sort((a, b) => a.localeCompare(b, 'pt-BR'));
@@ -71,7 +70,7 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
     e.preventDefault();
     const nome = (novoCliente ?? '').trim();
     if (!nome) return;
-    if (!clientes.some((c) => c.nome.toLowerCase() === nome.toLowerCase())) await acoes.criarCliente(nome, null);
+    if (!clientes.some((c) => c.nome.toLowerCase() === nome.toLowerCase())) await acoes.criarCliente(nome);
     await acoes.atualizar(t.id, { cliente: nome });
     setNovoCliente(null);
   }
@@ -164,12 +163,6 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
         </div>
 
         <aside className="card-lado">
-          {base && (
-            <nav className="card-atalhos" aria-label="Abrir fora do DONELY">
-              <a href={base} target="_blank" rel="noopener noreferrer"><Icone nome="livro" tamanho={15} />Base do cliente</a>
-            </nav>
-          )}
-
           <section aria-label="Propriedades">
                         {leitura ? (
             <ul className="lista-ios props">
@@ -224,15 +217,14 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
             )}
           </section>
 
-          <section>
-            <h3 className="lado-titulo">Links</h3>
-            <ul className="lado-links">
-              {base ? <li><a href={base} target="_blank" rel="noopener noreferrer"><Icone nome="livro" tamanho={14} />Base do cliente</a></li>
-                : t.cliente ? <li className="aviso-base"><Icone nome="alerta" tamanho={14} />Sem link da base de {t.cliente}. Cadastre em Configurações › Clientes.</li>
-                : <li className="sem-valor">Escolha o cliente para ver a base dele.</li>}
-              {t.links.map((l) => <li key={l.id}><a href={l.url} target="_blank" rel="noopener noreferrer"><Icone nome="link" tamanho={14} />{l.rotulo || l.url}</a></li>)}
-            </ul>
-          </section>
+          {t.links.length > 0 && (
+            <section>
+              <h3 className="lado-titulo">Links</h3>
+              <ul className="lado-links">
+                {t.links.map((l) => <li key={l.id}><a href={l.url} target="_blank" rel="noopener noreferrer"><Icone nome="link" tamanho={14} />{l.rotulo || l.url}</a></li>)}
+              </ul>
+            </section>
+          )}
 
           {t.status === 'concluido' && (
             <section className="lado-concluida">

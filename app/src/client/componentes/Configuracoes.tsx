@@ -19,20 +19,13 @@ export function Configuracoes({ config, clientes, acoes, onFechar, atalho }: Pro
     catch (e) { setResultadoAtalho({ texto: e instanceof Error ? e.message : 'Não foi possível criar o atalho.', erro: true }); }
     finally { setCriandoAtalho(false); }
   }
-  const [cliente, setCliente] = useState({ nome: '', base: '' });
+  const [cliente, setCliente] = useState('');
   const [tipo, setTipo] = useState('');
-  // Cliente cuja base está sendo editada aqui mesmo, na linha dele.
-  const [base, setBase] = useState<{ id: string; url: string } | null>(null);
-
-  async function salvarBase(e: FormEvent) {
-    e.preventDefault();
-    if (base && await acoes.atualizarCliente(base.id, base.url.trim() || null)) setBase(null);
-  }
 
   async function addCliente(e: FormEvent) {
     e.preventDefault();
-    if (!cliente.nome.trim()) return;
-    if (await acoes.criarCliente(cliente.nome.trim(), cliente.base.trim() || null)) setCliente({ nome: '', base: '' });
+    if (!cliente.trim()) return;
+    if (await acoes.criarCliente(cliente.trim())) setCliente('');
   }
 
   async function addTipo(e: FormEvent) {
@@ -76,32 +69,17 @@ export function Configuracoes({ config, clientes, acoes, onFechar, atalho }: Pro
             {clientes.map((c) => (
               <li key={c.id} className="linha-ios">
                 <span className="rotulo">{c.nome}</span>
-                {base?.id === c.id ? (
-                  <form className="controle" onSubmit={salvarBase}>
-                    <label className="sr" htmlFor={`base-${c.id}`}>Link da base de {c.nome}</label>
-                    <input id={`base-${c.id}`} type="url" autoFocus value={base.url} onChange={(e) => setBase({ id: c.id, url: e.target.value })} placeholder="https://…" />
-                    <button type="submit" className="btn texto pequeno forte">Salvar</button>
-                    <button type="button" className="btn texto pequeno" onClick={() => setBase(null)}>Cancelar</button>
-                  </form>
-                ) : (
-                  <span className="controle">
-                    {c.baseUrl && <a href={c.baseUrl} target="_blank" rel="noopener noreferrer"><Icone nome="livro" />Base</a>}
-                    <button type="button" className="btn texto pequeno" onClick={() => setBase({ id: c.id, url: c.baseUrl ?? '' })}>{c.baseUrl ? 'Editar' : 'Adicionar base'}</button>
-                    <button type="button" className="btn icone-so" onClick={() => acoes.removerCliente(c.id)} aria-label={`Remover ${c.nome}`}><Icone nome="x" tamanho={14} /></button>
-                  </span>
-                )}
+                <button type="button" className="btn icone-so" onClick={() => acoes.removerCliente(c.id)} aria-label={`Remover ${c.nome}`}><Icone nome="x" tamanho={14} /></button>
               </li>
             ))}
           </ul>
           <form className="linha-adicionar" onSubmit={addCliente}>
             <label className="sr" htmlFor="cfg-cliente">Nome do cliente</label>
-            <input id="cfg-cliente" required value={cliente.nome} onChange={(e) => setCliente({ ...cliente, nome: e.target.value })} placeholder="Novo cliente" />
-            <label className="sr" htmlFor="cfg-base">Link da base</label>
-            <input id="cfg-base" type="url" value={cliente.base} onChange={(e) => setCliente({ ...cliente, base: e.target.value })} placeholder="Link da base (opcional)" />
+            <input id="cfg-cliente" required value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Novo cliente" />
             <button type="submit" className="btn texto pequeno">Adicionar</button>
           </form>
         </div>
-        <p className="grupo-nota">O link da base (por exemplo, a pasta ou a página do cliente) aparece em cada tarefa dele.</p>
+        <p className="grupo-nota">Aparecem na Nova tarefa e no filtro da lista. Cliente é opcional em cada tarefa.</p>
       </section>
 
       <section className="grupo-ios">

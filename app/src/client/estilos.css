@@ -475,8 +475,6 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 [aria-invalid='true'] { box-shadow: inset 0 0 0 1.5px var(--erro) !important; border-radius: 8px !important; }
 .opcional { font-weight: 400; color: var(--texto-3); }
 .campo-checklist { min-height: 88px; padding-top: 12px !important; }
-.controle-base a { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: var(--texto-2); }
-.controle-base a:hover { background: var(--preenchimento); color: var(--acao); }
 
 /* material produzido: a área principal do card, onde a pessoa deposita o que fez */
 .grupo-material .lista-ios { box-shadow: 0 0 0 1.5px color-mix(in oklch, var(--acao) 35%, transparent); }
@@ -498,7 +496,6 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .material-soltar strong { font-size: 14.5px; color: var(--acao); }
 .material .erro-campo { padding-bottom: 10px; }
 .grupo-titulo .icone { color: var(--texto-3); }
-.aviso-base { justify-content: flex-start; gap: 8px; font-size: 13.5px; color: var(--atencao); }
 /* histórico do card: só log, recolhido e discreto */
 .registro-detalhes { font-size: 12.5px; color: var(--texto-3); }
 .registro-detalhes summary { cursor: pointer; padding: 4px 16px; width: fit-content; border-radius: 6px; }
@@ -514,8 +511,6 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .nova-colunas > div { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .nova-colunas .campo-notas#nv-briefing { min-height: 150px; }
 /* link da base: rótulo em cima e campo na largura toda, para o endereço não aparecer cortado */
-.linha-ios.linha-base { flex-direction: column; align-items: stretch; gap: 2px; padding: 10px 16px; }
-.linha-base input:not([type='checkbox']) { text-align: left; padding: 7px 10px; margin: 0 -10px; }
 
 
 
@@ -578,9 +573,6 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 
 /* coluna de apoio: fixa enquanto o fluxo rola */
 .card-lado { position: sticky; top: 0; display: flex; flex-direction: column; gap: 22px; padding-left: 28px; border-left: 1px solid var(--separador); }
-.card-atalhos { display: flex; flex-direction: column; gap: 2px; }
-.card-atalhos a { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 8px; margin: 0 -8px; border-radius: 8px; color: var(--acao); font-size: 14px; font-weight: 500; text-decoration: none; }
-.card-atalhos a:hover { background: var(--preenchimento); }
 .card-lado .props { background: transparent; border-radius: 0; overflow: visible; }
 .card-lado .props .linha-ios { padding: 4px 0; min-height: 40px; }
 .card-lado .props .linha-ios + .linha-ios::before { left: 0; }
@@ -591,7 +583,6 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .lado-links { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; }
 .lado-links a { display: inline-flex; align-items: center; gap: 7px; color: var(--acao); text-decoration: none; overflow-wrap: anywhere; }
 .lado-links a:hover { text-decoration: underline; }
-.lado-links .aviso-base { display: flex; gap: 7px; align-items: flex-start; }
 .lado-concluida { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; font-size: 13.5px; color: var(--texto-2); }
 .lado-rodape { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-top: 12px; border-top: 1px solid var(--separador); }
 .lado-rodape .registro-detalhes { width: 100%; }

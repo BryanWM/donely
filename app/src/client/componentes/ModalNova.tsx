@@ -8,55 +8,43 @@ interface Props { hoje: string; config: Config; clientes: Cliente[]; acoes: Acoe
 
 const NOVO = '__novo';
 const lista = new Intl.ListFormat('pt-BR', { type: 'conjunction' });
-const ehLink = (u: string) => /^https?:\/\/\S+$/i.test(u);
 /** Abre a lista ou o calendário nativo (o rótulo, sozinho, só daria foco). */
 const abrir = (id: string) => () => { try { (document.getElementById(id) as HTMLInputElement | null)?.showPicker?.(); } catch { /* navegador sem showPicker: fica só o foco */ } };
 
 export function ModalNova({ hoje, config, clientes, acoes, onFechar, onCriada }: Props) {
-  const [f, setF] = useState({ titulo: '', cliente: '', novoCliente: '', tipo: '', prioridade: 'normal' as Prioridade, prazo: somarDias(hoje, 3), briefing: '', checklist: '', base: '' });
+  const [f, setF] = useState({ titulo: '', cliente: '', novoCliente: '', tipo: '', prioridade: 'normal' as Prioridade, prazo: somarDias(hoje, 3), briefing: '', checklist: '' });
   const [tentou, setTentou] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const mudar = (campo: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [campo]: e.target.value }));
 
 
-  const clienteEscolhido = clientes.find((c) => c.nome === f.cliente);
-  function escolherCliente(nome: string) {
-    // A referência acompanha o cliente: mostra a base que ele já tem.
-    setF((x) => ({ ...x, cliente: nome, base: clientes.find((c) => c.nome === nome)?.baseUrl ?? '' }));
-  }
+  const escolherCliente = (nome: string) => setF((x) => ({ ...x, cliente: nome }));
 
   const novo = f.cliente === NOVO;
   const faltando = [
     !f.titulo.trim() && ['titulo', 'título'],
-    !(novo ? f.novoCliente.trim() : f.cliente) && ['cliente', 'cliente'],
     !f.tipo && ['tipo', 'tipo de entrega'],
     !f.briefing.trim() && ['briefing', 'briefing'],
   ].filter(Boolean) as [string, string][];
   const prazoPassado = Boolean(f.prazo) && f.prazo < hoje;
-  const baseInvalida = Boolean(f.base.trim()) && !ehLink(f.base.trim());
   const mensagens = [
     faltando.length ? `Preencha ${lista.format(faltando.map(([, n]) => n))}.` : '',
     prazoPassado ? 'Escolha um prazo de hoje em diante.' : '',
-    baseInvalida ? 'Use um link da base que comece com https://.' : '',
   ].filter(Boolean);
-  const invalido = (campo: string) => tentou && (faltando.some(([c]) => c === campo) || (campo === 'prazo' && prazoPassado) || (campo === 'base' && baseInvalida));
+  const invalido = (campo: string) => tentou && (faltando.some(([c]) => c === campo) || (campo === 'prazo' && prazoPassado));
   const marcar = (campo: string) => (invalido(campo) ? { 'aria-invalid': true, 'aria-describedby': 'nova-erros' } : {});
 
   async function criar(e: FormEvent) {
     e.preventDefault();
     setTentou(true);
     if (mensagens.length) {
-      const primeiro = faltando[0]?.[0] ?? (prazoPassado ? 'prazo' : 'base');
-      document.getElementById(`nv-${primeiro === 'cliente' && novo ? 'novo-cliente' : primeiro}`)?.focus();
+      document.getElementById(`nv-${faltando[0]?.[0] ?? 'prazo'}`)?.focus();
       return;
     }
     if (enviando) return;
     setEnviando(true);
     const nomeCliente = novo ? f.novoCliente.trim() : f.cliente;
-    const base = f.base.trim() || null;
-    // A base é do cliente: guardada nele, aparece em todas as tarefas dele.
-    if (novo && !clientes.some((c) => c.nome.toLowerCase() === nomeCliente.toLowerCase())) await acoes.criarCliente(nomeCliente, base);
-    else if (clienteEscolhido && base !== clienteEscolhido.baseUrl && base) await acoes.atualizarCliente(clienteEscolhido.id, base);
+    if (nomeCliente && novo && !clientes.some((c) => c.nome.toLowerCase() === nomeCliente.toLowerCase())) await acoes.criarCliente(nomeCliente);
     const t = await acoes.criar({
       titulo: f.titulo.trim(), cliente: nomeCliente, tipo: f.tipo, prioridade: f.prioridade, prazo: f.prazo || null,
       notas: f.briefing.trim(), checklist: f.checklist.split('\n').map((s) => s.trim()).filter(Boolean),
@@ -88,12 +76,12 @@ export function ModalNova({ hoje, config, clientes, acoes, onFechar, onCriada }:
                   <label htmlFor={novo ? 'nv-novo-cliente' : 'nv-cliente'} onClick={novo ? undefined : abrir('nv-cliente')}>Cliente</label>
                   {novo ? (
                     <span className="controle">
-                      <input id="nv-novo-cliente" autoFocus value={f.novoCliente} onChange={mudar('novoCliente')} placeholder="Nome do cliente novo" {...marcar('cliente')} />
+                      <input id="nv-novo-cliente" autoFocus value={f.novoCliente} onChange={mudar('novoCliente')} placeholder="Nome do cliente novo" />
                       <button type="button" className="btn texto pequeno" onClick={() => escolherCliente('')}>Cancelar</button>
                     </span>
                   ) : (
-                    <select id="nv-cliente" value={f.cliente} onChange={(e) => escolherCliente(e.target.value)} {...marcar('cliente')}>
-                      <option value="" disabled>Escolha o cliente</option>
+                    <select id="nv-cliente" value={f.cliente} onChange={(e) => escolherCliente(e.target.value)}>
+                      <option value="">Sem cliente</option>
                       {clientes.map((c) => <option key={c.id}>{c.nome}</option>)}
                       <option value={NOVO}>Novo cliente…</option>
                     </select>
@@ -128,19 +116,6 @@ export function ModalNova({ hoje, config, clientes, acoes, onFechar, onCriada }:
                   </span>
                 </li>
               </ul>
-            </section>
-            <section className="grupo-ios">
-              <h3 className="grupo-titulo">Referências <span className="opcional">opcional</span></h3>
-              <ul className="lista-ios">
-                <li className="linha-ios linha-base">
-                  <label htmlFor="nv-base">Base do cliente</label>
-                  <span className="controle controle-base">
-                    <input id="nv-base" type="url" value={f.base} onChange={mudar('base')} placeholder="https://…" {...marcar('base')} />
-                    {ehLink(f.base.trim()) && <a href={f.base.trim()} target="_blank" rel="noopener noreferrer" aria-label="Abrir a base em nova aba"><Icone nome="externo" tamanho={15} /></a>}
-                  </span>
-                </li>
-              </ul>
-              <p className="grupo-nota">{clienteEscolhido?.baseUrl ? 'Base que este cliente já tem. Se mudar, atualiza para todas as tarefas dele.' : 'Fica salva no cliente e aparece em todas as tarefas dele.'}</p>
             </section>
           </div>
           <div>

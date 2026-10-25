@@ -11,9 +11,8 @@ export interface Acoes {
   adicionarItem: (id: string, texto: string) => Promise<void>;
   marcarItem: (id: string, item: string, feito: boolean) => Promise<void>;
   removerItem: (id: string, item: string) => Promise<void>;
-  criarCliente: (nome: string, baseUrl: string | null) => Promise<Cliente | undefined>;
+  criarCliente: (nome: string) => Promise<Cliente | undefined>;
   removerCliente: (id: string) => Promise<void>;
-  atualizarCliente: (id: string, baseUrl: string | null) => Promise<boolean>;
   anexar: (id: string, arquivos: File[], papel?: PapelAnexo) => Promise<void>;
   removerAnexo: (id: string, anexo: string) => Promise<void>;
   salvarConfig: (campos: Partial<Config>) => Promise<boolean>;

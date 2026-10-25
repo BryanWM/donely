@@ -265,21 +265,16 @@ export class Repositorio {
 
   listarClientes(): Cliente[] {
     return (this.db.prepare('SELECT * FROM clientes ORDER BY nome COLLATE NOCASE').all() as Linha[])
-      .map((c) => ({ id: String(c.id), nome: String(c.nome), baseUrl: (c.base_url as string) ?? null }));
+      .map((c) => ({ id: String(c.id), nome: String(c.nome) }));
   }
 
   /** Cria o cliente; devolve null se já existir um com o mesmo nome (sem diferenciar maiúsculas). */
-  criarCliente(nome: string, baseUrl: string | null): Cliente | null {
+  criarCliente(nome: string): Cliente | null {
     const existe = this.db.prepare('SELECT 1 FROM clientes WHERE nome = ? COLLATE NOCASE').get(nome);
     if (existe) return null;
     const id = randomUUID();
-    this.db.prepare('INSERT INTO clientes (id, nome, base_url) VALUES (?, ?, ?)').run(id, nome, baseUrl);
-    return { id, nome, baseUrl };
-  }
-
-  atualizarCliente(id: string, baseUrl: string | null): Cliente | null {
-    if (!Number(this.db.prepare('UPDATE clientes SET base_url = ? WHERE id = ?').run(baseUrl, id).changes)) return null;
-    return this.listarClientes().find((c) => c.id === id) ?? null;
+    this.db.prepare('INSERT INTO clientes (id, nome) VALUES (?, ?)').run(id, nome);
+    return { id, nome };
   }
 
   removerCliente(id: string): boolean {

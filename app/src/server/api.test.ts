@@ -156,7 +156,7 @@ describe('cronômetro das demandas', () => {
   });
 });
 
-describe('nova tarefa: prazo, anexos e base do cliente', () => {
+describe('nova tarefa: prazo, anexos e cliente', () => {
   const amanha = () => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString('sv-SE'); };
 
   it('recusa prazo no passado ao criar', async () => {
@@ -196,11 +196,12 @@ describe('nova tarefa: prazo, anexos e base do cliente', () => {
     expect(v.headers.get('content-disposition')).toMatch(/^inline/);
   });
 
-  it('salva o link da base no cliente', async () => {
+  it('cliente é opcional na tarefa e é só um nome', async () => {
+    const r = await pedir('POST', '/tarefas', { titulo: 'Sem cliente' });
+    expect(r.status).toBe(201);
+    expect((await r.json()).cliente).toBe('');
     const cli = await (await pedir('POST', '/clientes', { nome: 'Aurora' })).json();
-    const r = await (await pedir('PATCH', `/clientes/${cli.id}`, { baseUrl: 'https://exemplo.com.br/aurora' })).json();
-    expect(r.baseUrl).toBe('https://exemplo.com.br/aurora');
-    expect((await pedir('PATCH', `/clientes/${cli.id}`, { baseUrl: 'javascript:alert(1)' })).status).toBe(400);
+    expect(cli).toEqual({ id: expect.any(String), nome: 'Aurora' });
   });
 });
 

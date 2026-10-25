@@ -160,14 +160,9 @@ export function criarApi(repo: Repositorio, { desligar, criarAtalho }: Sistema =
   });
 
   api.post('/clientes', async (c) => {
-    const d = await corpo(c, z.object({ nome: texto(120).min(1, 'Dê um nome ao cliente'), baseUrl: url.nullable().optional() })); if (d instanceof Response) return d;
-    const cli = repo.criarCliente(d.nome, d.baseUrl ?? null);
+    const d = await corpo(c, z.object({ nome: texto(120).min(1, 'Dê um nome ao cliente') })); if (d instanceof Response) return d;
+    const cli = repo.criarCliente(d.nome);
     return cli ? c.json(cli, 201) : c.json({ erro: 'Já existe um cliente com esse nome' }, 409);
-  });
-  api.patch('/clientes/:id', async (c) => {
-    const d = await corpo(c, z.object({ baseUrl: url.nullable() })); if (d instanceof Response) return d;
-    const cli = repo.atualizarCliente(c.req.param('id'), d.baseUrl);
-    return cli ? c.json(cli) : c.json({ erro: 'Cliente não encontrado' }, 404);
   });
   api.delete('/clientes/:id', (c) => (repo.removerCliente(c.req.param('id')) ? c.body(null, 204) : c.json({ erro: 'Cliente não encontrado' }, 404)));
 

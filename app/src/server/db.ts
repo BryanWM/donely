@@ -74,6 +74,8 @@ const MIGRACOES: string[] = [
      papel TEXT NOT NULL DEFAULT 'material' CHECK (papel IN ('material', 'referencia'))
    );
    CREATE INDEX idx_anexos_tarefa ON anexos (tarefa_id);`,
+  // O cliente fica só com o nome: o link da base de cada um saiu.
+  `ALTER TABLE clientes DROP COLUMN base_url;`,
 ];
 
 /** Abre (ou cria) o banco e aplica as migrações pendentes. Use ':memory:' nos testes. */

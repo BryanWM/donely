@@ -134,15 +134,10 @@ export function App() {
       adicionarItem: async (id, texto) => { await comTarefa(() => api.adicionarItem(id, texto)); },
       marcarItem: async (id, item, feito) => { await comTarefa(() => api.marcarItem(id, item, feito)); },
       removerItem: async (id, item) => { await comTarefa(() => api.removerItem(id, item)); },
-      criarCliente: async (nome, baseUrl) => {
-        const c = await tentar(() => api.criarCliente(nome, baseUrl));
+      criarCliente: async (nome) => {
+        const c = await tentar(() => api.criarCliente(nome));
         if (c) setEstado((e) => e && { ...e, clientes: [...e.clientes, c].sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR')) });
         return c;
-      },
-      atualizarCliente: async (id, baseUrl) => {
-        const c = await tentar(() => api.atualizarCliente(id, baseUrl));
-        if (c) setEstado((e) => e && { ...e, clientes: e.clientes.map((x) => (x.id === id ? c : x)) });
-        return Boolean(c);
       },
       // Um arquivo por vez, para mostrar o erro do que falhar sem perder os outros.
       anexar: async (id, arquivos, papel) => { for (const f of arquivos) await comTarefa(() => api.anexar(id, f, papel)); },

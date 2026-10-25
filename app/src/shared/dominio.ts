@@ -50,7 +50,7 @@ export interface Tarefa {
   anexos: Anexo[];
 }
 
-export interface Cliente { id: string; nome: string; baseUrl: string | null }
+export interface Cliente { id: string; nome: string }
 
 // ---------- demandas não planejadas ----------
 
