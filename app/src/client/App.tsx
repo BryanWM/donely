@@ -5,9 +5,10 @@ import type { Acoes } from './acoes';
 import { api, type Estado } from './api';
 import { Caderno, type SecaoCaderno } from './componentes/Caderno';
 import { Comemoracao } from './componentes/Comemoracao';
+import { definirDicaDiaria, dicaDiariaLigada } from './dicas';
 import { pulsarContagem } from './voo';
 import { CapturaRapida } from './componentes/CapturaRapida';
-import { Configuracoes } from './componentes/Configuracoes';
+import { Configuracoes, type AbaConfig } from './componentes/Configuracoes';
 import { Historico } from './componentes/Historico';
 import { Modal } from './componentes/Modal';
 import { Demandas, useAgora } from './componentes/Demandas';
@@ -19,7 +20,7 @@ import { EscolhaCard } from './componentes/EscolhaCard';
 import { ModalTarefa } from './componentes/ModalTarefa';
 import { Quadro } from './componentes/Quadro';
 
-interface Aviso { id: number; texto: string; erro?: boolean; acao?: { rotulo: string; fn: () => void } }
+interface Aviso { id: number; texto: string; erro?: boolean; acao?: { rotulo: string; fn: () => void }; acaoSecundaria?: { rotulo: string; fn: () => void } }
 const mensagem = (e: unknown) => (e instanceof Error ? e.message : 'Sem resposta do servidor. Confira se o DONELY está rodando e tente de novo.');
 type Vista = Status | 'demandas' | 'historico';
 const ABAS: Vista[] = [...COLUNAS.map((c) => c.id), 'demandas', 'historico'];
@@ -78,6 +79,9 @@ export function App() {
   }, [vista]);
   const [aberta, setAberta] = useState<string | null>(null);
   const [janela, setJanela] = useState<'escolher' | 'nova' | 'rapida' | 'config' | 'captura' | 'versao' | 'caderno' | null>(null);
+  // aba que as Configurações abrem: a dica do dia abre em Dicas
+  const [abaConfig, setAbaConfig] = useState<AbaConfig>('tarefas');
+  const abrirConfig = (aba: AbaConfig = 'tarefas') => { setAbaConfig(aba); setJanela('config'); };
   // última área do Caderno usada (Pessoas ou Ideias): vale enquanto o app estiver aberto
   const [secaoCaderno, setSecaoCaderno] = useState<SecaoCaderno>('pessoas');
   // pasta do projeto quando o repositório tem versão nova (mostra o botão de atualização no topo)
@@ -157,6 +161,22 @@ export function App() {
   }, [janela, aberta]);
 
   const avisar = (texto: string, extra: Partial<Aviso> = {}) => { setSaindo(false); setAviso({ id: Date.now(), texto, ...extra }); };
+
+  // Dica do dia: uma vez por dia, na primeira carga da página. O dia fica no navegador, sem gravar nada no servidor.
+  const dicaChecada = useRef(false);
+  useEffect(() => {
+    if (!estado || dicaChecada.current) return;
+    dicaChecada.current = true;
+    if (!dicaDiariaLigada()) return;
+    try {
+      if (localStorage.getItem('donely-dica') === hoje) return;
+      localStorage.setItem('donely-dica', hoje);
+    } catch { return; }
+    avisar('Dica: use uma IA gratuita para organizar ideias, conversas e tarefas.', {
+      acao: { rotulo: 'Ver dica', fn: () => abrirConfig('dicas') },
+      acaoSecundaria: { rotulo: 'Não exibir novamente', fn: () => definirDicaDiaria(false) },
+    });
+  }, [estado, hoje]);
   const fecharAviso = () => setSaindo(true);
   // Mais uma concluída: comemora com a logo animada (quem pediu menos movimento fica só com o aviso).
   const comemorar = () => { if (!matchMedia('(prefers-reduced-motion: reduce)').matches) setComemorando(true); };
@@ -315,7 +335,7 @@ export function App() {
               <Icone nome="sincronizar" tamanho={18} /><span className="ponto-novo" aria-hidden="true" />
             </button>
           )}
-          <button type="button" className="btn redondo" onClick={() => setJanela('config')} aria-label="Configurações" title="Configurações"><Icone nome="ajustes" tamanho={18} /></button>
+          <button type="button" className="btn redondo" onClick={() => abrirConfig()} aria-label="Configurações" title="Configurações"><Icone nome="ajustes" tamanho={18} /></button>
           {estado.desligavel && (
             <button type="button" className={`btn redondo desligar ${desligar === 'confirmar' ? 'confirmando' : ''}`} onBlur={() => setDesligar((d) => (d === 'confirmar' ? 'nao' : d))}
               aria-label={desligar === 'confirmar' ? 'Confirmar: desligar o DONELY' : 'Desligar o DONELY'} title={desligar === 'confirmar' ? 'Clique de novo para desligar' : 'Desligar'}
@@ -343,7 +363,7 @@ export function App() {
           {vista === 'demandas' ? <Demandas demandas={estado.demandas} hoje={hoje} acoes={acoes} onCapturar={() => setJanela('captura')} />
             : vista === 'historico'
             ? <Historico tarefas={estado.tarefas} demandas={estado.demandas} hoje={hoje} acoes={acoes} onAbrir={setAberta} onAviso={avisar} />
-            : <Quadro coluna={vista} tarefas={estado.tarefas} config={estado.config} hoje={hoje} acoes={acoes} onAbrir={setAberta} onConfig={() => setJanela('config')} onNova={() => setJanela('escolher')} />}
+            : <Quadro coluna={vista} tarefas={estado.tarefas} config={estado.config} hoje={hoje} acoes={acoes} onAbrir={setAberta} onConfig={() => abrirConfig()} onNova={() => setJanela('escolher')} />}
         </section>
       </main>
 
@@ -364,7 +384,7 @@ export function App() {
           <AtualizarVersao pasta={novaVersao ?? ''} desligavel={estado.desligavel} onAviso={avisar} />
         </Modal>
       )}
-      {janela === 'config' && <Configuracoes config={estado.config} clientes={estado.clientes} acoes={acoes} atalho={estado.atalho} onFechar={() => setJanela(null)} />}
+      {janela === 'config' && <Configuracoes config={estado.config} clientes={estado.clientes} acoes={acoes} atalho={estado.atalho} abaInicial={abaConfig} onFechar={() => setJanela(null)} />}
 
       {/* A região existe antes do texto, para o leitor de tela anunciar cada aviso. */}
       <div role="status">
@@ -374,6 +394,7 @@ export function App() {
             <Icone nome={aviso.erro ? 'alerta' : 'check'} />
             <span>{aviso.texto}</span>
             {aviso.acao && <button type="button" onClick={() => { fecharAviso(); aviso.acao!.fn(); }}>{aviso.acao.rotulo}</button>}
+            {aviso.acaoSecundaria && <button type="button" className="aviso-secundaria" onClick={() => { fecharAviso(); aviso.acaoSecundaria!.fn(); }}>{aviso.acaoSecundaria.rotulo}</button>}
             <button type="button" className="aviso-fechar" onClick={fecharAviso} aria-label="Fechar aviso"><Icone nome="x" tamanho={14} /></button>
           </div>
         )}

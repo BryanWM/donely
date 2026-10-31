@@ -642,6 +642,8 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .caderno-secoes { justify-self: start; }
 /* Pessoas: lista à esquerda, histórico por dia à direita */
 .modal-cheio { width: calc(100% - 32px); height: calc(100% - 32px); max-height: none; background: var(--superficie); }
+/* Configurações: 40% mais estreita que o padrão de tela cheia */
+.modal-cheio:has(.config-layout) { width: calc((100% - 32px) * 0.6); }
 .modal-cheio .modal-corpo { padding: 0; gap: 0; overflow: hidden; }
 .notas { flex: 1; min-height: 0; display: flex; }
 .notas-pessoas { flex: none; width: 280px; overflow-y: auto; padding: 18px 16px; border-right: 1px solid var(--separador); display: flex; flex-direction: column; gap: 10px; }
@@ -733,6 +735,30 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .atualizar-versao code { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 13px; }
 .comando { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 8px 8px 8px 12px; border-radius: 10px; background: var(--preenchimento); }
 .comando code { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.config-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 240px minmax(0, 1fr); }
+.config-nav { display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; border-right: 1px solid var(--separador); overflow-y: auto; }
+.config-nav button { padding: 9px 12px; border: 0; border-radius: 8px; background: none; color: var(--texto-2); font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
+.config-nav button:hover { background: var(--preenchimento); color: var(--texto); }
+.config-nav button[aria-current="true"] { background: var(--preenchimento); color: var(--texto); font-weight: 600; }
+/* conteúdo numa coluna de largura fixa, centralizada: sem linhas esticadas por toda a janela */
+.config-painel { min-width: 0; width: 100%; max-width: 680px; margin: 0 auto; overflow-y: auto; overscroll-behavior: contain; padding: 28px 40px 36px; display: flex; flex-direction: column; gap: 14px; }
+.config-painel.config-largo { max-width: none; }
+.config-cab { display: flex; flex-direction: column; gap: 4px; padding-bottom: 4px; }
+.config-titulo { font-size: 22px; font-weight: 700; }
+.config-desc { font-size: 14px; color: var(--texto-2); }
+@media (max-width: 720px) {
+  .config-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .config-nav { flex-direction: row; overflow-x: auto; padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--separador); }
+  .config-nav button { white-space: nowrap; }
+  .config-painel { padding: 18px 16px 24px; }
+}
+.dicas-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.dica-ia { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 16px; border-radius: 12px; background: var(--preenchimento); }
+.dica-cab { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.dica-cab h3 { font-size: 15px; font-weight: 600; }
+.dica-cab .grupo-nota { padding: 0; }
+.dica-pedidos { display: flex; flex-direction: column; gap: 4px; }
+.dica-pedidos code { font-size: 13px; overflow-wrap: anywhere; }
 
 /* ---------- card rápido: escolha de modelo, checklist e linha da lista ---------- */
 .escolha-card { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; }
