@@ -40,6 +40,8 @@ Tudo fica na sua máquina, na pasta `app/dados/`, sem nuvem e sem conta. Faça b
 | [Guia de uso](docs/uso.md) | As pastas, o card, a Captura rápida, o Histórico, as configurações, o atalho e o backup |
 | [Arquitetura](docs/arquitetura.md) | Como o app é montado: servidor, banco, interface e segurança |
 | [API](docs/api.md) | As rotas do servidor local |
+| [Versão e atualizações](docs/versionamento.md) | Como a versão é numerada e como o app avisa que há atualização |
+| [Organizar com IA](docs/prompt-ia.md) | Os prompts para organizar ideias, cards e conversas numa IA gratuita |
 | [Desenvolvimento](docs/desenvolvimento.md) | Rodar em modo de desenvolvimento, testes e convenções |
 | [Sistema de design](DESIGN.md) | Cores, tipografia, componentes e regras visuais |
 | [Por que um app local](docs/arquitetura.md#por-que-um-app-local) | A escolha de Node, SQLite e nenhuma nuvem |

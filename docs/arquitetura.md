@@ -76,7 +76,7 @@ Um arquivo SQLite, com chaves estrangeiras ligadas e exclusão em cascata: apaga
 | `config` | Configurações: prazo de arquivamento, tema, tipos e sugestões ocultas de "Quem pediu". |
 | `pessoas` | Pessoas do Caderno. |
 | `anotacoes` | Anotações de cada pessoa, com data de criação e de edição. |
-| `rascunhos` | Rascunhos de ideias, com vínculo opcional a um cliente ou a uma tarefa. |
+| `rascunhos` | Rascunhos de ideias, com vínculo opcional a um cliente ou a uma tarefa. A coluna `tags` guarda a lista de tags em JSON. |
 
 **Migrações:** ficam numa lista em `db.ts`, aplicadas em ordem na abertura do banco. Para mudar o banco, adicione uma migração nova ao fim da lista; nunca edite uma que já existe.
 

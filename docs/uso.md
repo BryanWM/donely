@@ -46,7 +46,6 @@ Cada linha mostra tarefa, cliente, tipo, prioridade, prazo, itens do checklist e
 - **Selos de prazo:** "Atrasada · N dias" e "Vence hoje". Data futura aparece como texto.
 - **Coluna Cliente:** aparece quando a lista tem algum Projeto. Se só houver cards Rápidos, ela some e a tabela fica mais estreita.
 - **Filtros:** busca por título, cliente ou nota, e filtros por cliente, tipo e modelo (Todos, Projetos ou Rápidos).
-- **Excluir na linha:** a lixeira em cada card exclui na hora, sem abrir o modal. O primeiro clique deixa o botão vermelho, e o segundo exclui. Se o foco sair antes, volta ao normal.
 - **Novo card:** botão verde à direita dos filtros. Se a janela estiver estreita, o botão continua na primeira linha e os filtros descem para a segunda.
 
 ## O card
@@ -55,10 +54,13 @@ O card segue a ordem do trabalho:
 
 1. **Briefing:** o que precisa ser feito. Editável até a tarefa ser concluída.
 2. **Referências:** imagens, PDFs e documentos que orientam o trabalho. Arraste, cole (`Ctrl+V`) ou clique para adicionar.
-3. **Checklist:** itens com barra de progresso. Digite e aperte `Enter` para adicionar.
-4. **Material produzido:** os arquivos do resultado.
+3. **Material produzido:** os arquivos do resultado.
 
-Na coluna da direita ficam cliente, tipo, prioridade, prazo, o histórico de eventos e o botão de excluir, que pede um segundo clique.
+Na coluna da direita ficam cliente, tipo, prioridade e prazo, no topo; o **checklist** no meio, centralizado na altura do card; e, embaixo, o histórico de eventos e o botão de excluir, que pede um segundo clique. O card Rápido segue o mesmo desenho, com o título e a descrição à esquerda.
+
+**Checklist:** digite um item e aperte `Enter`. Para vários de uma vez, cole uma lista no campo: cada linha vira um item, e linhas vazias são ignoradas.
+
+**Excluir:** o botão fica dentro do card, no rodapé da coluna da direita, tanto no Projeto quanto no Rápido. Pede um segundo clique.
 
 O card é editável em A fazer e em Fazendo. Em Concluído ele mostra os dados sem deixar mudar.
 
@@ -77,6 +79,7 @@ Para anotações que não são de uma tarefa. Aperte `N` ou clique em **Caderno*
 
 - **Pessoas:** uma lista de pessoas com quem você conversa. Para cada uma, anote o que foi conversado, com data e hora. As anotações podem ser escritas em Markdown, com as abas **Escrever** e **Visualizar**. Enquanto você escreve, o texto é salvo sozinho.
 - **Ideias:** rascunhos livres. Cada rascunho pode ser renomeado e ligado a um cliente ou a uma tarefa. Para aproveitar um rascunho, escolha o destino: **Nova tarefa** (cria um Projeto com o texto no briefing) ou **Tarefa existente** (o texto entra no fim do briefing dela). O rascunho em si não muda.
+- **Tags nas ideias:** cada rascunho tem uma situação, **Na ideia** ou **Executado** (ou **Sem situação**), e tags livres que você digita e confirma com `Enter`. Elas aparecem na lista, e um filtro de tags no topo mostra só as ideias marcadas. A busca também encontra as tags.
 
 ## Captura rápida
 
@@ -119,7 +122,7 @@ Os avisos aparecem embaixo, no centro da tela, e somem sozinhos: em cerca de 3,5
 
 **Dica do dia:** uma vez por dia, ao abrir o app, aparece um aviso com uma dica sobre IA gratuita. O botão **Ver dica** abre as Configurações na seção Dicas de IA. O botão **Não exibir novamente** desliga a dica do dia; para ligar de novo, use **Mostrar** na seção Dicas de IA. Essa escolha fica guardada no navegador.
 
-Quando há uma versão nova do repositório, aparece um aviso e um botão com um ponto verde no topo. Ele mostra como atualizar: o DONELY confere o GitHub ao abrir e a cada 6 horas. Os seus dados não mudam na atualização.
+**Versão e atualizações:** a versão instalada aparece ao lado da marca, no topo (`ver. 1.0.0`). Ao iniciar, o DONELY compara a sua cópia com a branch `main` do GitHub. Em dia, não aparece nada. Desatualizado, um alerta âmbar fica no topo, e um aviso aparece uma vez. O alerta abre a janela **Atualização disponível**, com a sua versão, a da `main`, as alterações que faltam e o passo a passo para atualizar. Os seus dados não mudam na atualização. Detalhes em [Versão e atualizações](versionamento.md).
 
 ## Seus dados
 

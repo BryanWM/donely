@@ -80,11 +80,11 @@ As rotas de demanda devolvem a lista inteira, porque iniciar uma demanda pausa a
 | `DELETE /anotacoes/:id` | — | Remove a anotação. Devolve `204`. |
 | `GET /rascunhos` | — | Lista os rascunhos, do mais recente para o mais antigo. |
 | `POST /rascunhos` | `titulo`, `conteudo`, `vinculo` (opcional: `{ tipo: 'cliente' ou 'tarefa', id }`) | Cria um rascunho. Devolve `201`. |
-| `PATCH /rascunhos/:id` | qualquer um dos campos acima; `vinculo: null` remove o vínculo | Edita o rascunho. |
+| `PATCH /rascunhos/:id` | qualquer um dos campos acima; `vinculo: null` remove o vínculo; `tags` é a lista completa de tags (até 20, cada uma de até 30 caracteres) | Edita o rascunho. Quem não envia `tags` mantém as atuais. |
 | `DELETE /rascunhos/:id` | — | Remove o rascunho. Devolve `204`. |
 
 ## Sistema
 
-| `GET /versao` | Compara o commit instalado com o da branch padrão no GitHub (`git ls-remote`, só consulta). Devolve `{ desatualizada, pasta? }`. Guarda a resposta por 1 hora. Sem git, sem internet ou sem acesso ao repositório, responde `{ desatualizada: false }`. |
+| `GET /versao` | Devolve o resultado da última verificação contra a `main` do GitHub, feita pelo servidor ao iniciar e a cada hora: `{ atual, desatualizada }` e, quando desatualizada, `pasta`, `disponivel` (versão da `main`), `faltam` (commits que faltam) e `alteracoes` (`{ hash, titulo }`, até 20). Sem git, sem internet ou fora de um clone, responde que está em dia. Veja [Versão e atualizações](versionamento.md). |
 | `POST /desligar` | Encerra o app inteiro (servidor e interface). Só existe quando o app foi aberto pelo atalho; senão, `404`. Responde `204` antes de desligar. O `GET /estado` traz `desligavel: true` nesse caso. |
 | `POST /atalho` | Cria o atalho DONELY na área de trabalho do Windows (roda `scripts/criar-atalho.sh`) e devolve `{ caminho }`. Só existe no WSL; senão, `404`. Falha devolve `500` com a mensagem. O `GET /estado` traz `atalho: true` quando está disponível. |
