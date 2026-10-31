@@ -4,7 +4,7 @@ Como o DONELY funciona no dia a dia. Para instalar, veja o [README](../README.md
 
 ## A tela
 
-No topo ficam o título com a data de hoje, um resumo (abertas, atrasadas, vencem hoje e feitas na semana) e dois atalhos: **Captura rápida** e **Configurações**.
+No topo ficam o título com a data de hoje, um resumo (abertas, atrasadas, vencem hoje e feitas na semana) e os atalhos: **Captura rápida** (`C`), **Caderno** (`N`) e **Configurações**. Quando o DONELY foi aberto pelo atalho da área de trabalho, aparece também o botão **Desligar** (veja [Atalho na área de trabalho](#atalho-na-área-de-trabalho)).
 
 Abaixo ficam as abas, em forma de pasta:
 
@@ -28,15 +28,26 @@ A tarefa só muda de pasta pelo botão da linha. Não há arrastar nem mover à 
 
 Ao clicar numa ação, a linha "viaja" até a aba de destino e o contador dela pulsa. Cada tarefa concluída ganha uma comemoração com a logo, que fecha com um clique. Quem tem "reduzir movimento" ligado no sistema não vê as animações.
 
+## Dois modelos de card
+
+Ao clicar em **Novo card**, você escolhe entre:
+
+- **Projeto:** o formulário completo, com cliente, tipo de entrega, briefing, referências, checklist e material produzido.
+- **Rápido:** só o essencial, para tarefas comuns. Tem título (obrigatório), descrição, tipo (opcional), prazo, prioridade e checklist. Não tem cliente, briefing nem arquivos.
+
+Os cards que já existiam continuam sendo Projeto.
+
 ## A lista
 
-Cada linha mostra tarefa, cliente, tipo, prioridade, prazo, itens do checklist e a ação da etapa. Clique na linha para abrir o card.
+Cada linha mostra tarefa, cliente, tipo, prioridade, prazo, itens do checklist e a ação da etapa. Clique na linha para abrir o card. Um card Rápido mostra a descrição logo abaixo do título, e só aparecem os campos que foram preenchidos.
 
 - **Ordem:** atrasadas primeiro, depois por prioridade (Urgente, Alta, Normal) e por prazo. Em Concluído, as mais recentes no topo.
 - **Faixa colorida à esquerda:** vermelha para atrasada ou urgente, âmbar para alta.
 - **Selos de prazo:** "Atrasada · N dias" e "Vence hoje". Data futura aparece como texto.
-- **Filtros:** busca por título, cliente ou nota, e filtros por cliente e tipo.
-- **Nova tarefa:** botão verde à direita dos filtros.
+- **Coluna Cliente:** aparece quando a lista tem algum Projeto. Se só houver cards Rápidos, ela some e a tabela fica mais estreita.
+- **Filtros:** busca por título, cliente ou nota, e filtros por cliente, tipo e modelo (Todos, Projetos ou Rápidos).
+- **Excluir na linha:** a lixeira em cada card exclui na hora, sem abrir o modal. O primeiro clique deixa o botão vermelho, e o segundo exclui. Se o foco sair antes, volta ao normal.
+- **Novo card:** botão verde à direita dos filtros. Se a janela estiver estreita, o botão continua na primeira linha e os filtros descem para a segunda.
 
 ## O card
 
@@ -50,6 +61,22 @@ O card segue a ordem do trabalho:
 Na coluna da direita ficam cliente, tipo, prioridade, prazo, o histórico de eventos e o botão de excluir, que pede um segundo clique.
 
 O card é editável em A fazer e em Fazendo. Em Concluído ele mostra os dados sem deixar mudar.
+
+## O card Rápido
+
+Abre com só cinco campos: **Título**, **Descrição**, **Tipo**, **Prazo** e **Prioridade**, mais o **Checklist**.
+
+- **Prioridade:** "Sem prioridade" é o padrão, e nesse caso o card não mostra nada. Alta e Urgente aparecem no card.
+- **Checklist:** adicione itens com `Enter`, edite o texto clicando no item, marque e desmarque, e remova com o `×`.
+- **Ações:** no rodapé do detalhe, **Iniciar**, **Concluir** ou **Voltar para A fazer**, conforme a etapa. A exclusão é pela lixeira da lista.
+- Em Concluído, o card fica só de leitura, como no Projeto.
+
+## Caderno
+
+Para anotações que não são de uma tarefa. Aperte `N` ou clique em **Caderno**. Ele tem duas áreas, escolhidas no topo:
+
+- **Pessoas:** uma lista de pessoas com quem você conversa. Para cada uma, anote o que foi conversado, com data e hora. As anotações podem ser escritas em Markdown, com as abas **Escrever** e **Visualizar**. Enquanto você escreve, o texto é salvo sozinho.
+- **Ideias:** rascunhos livres. Cada rascunho pode ser renomeado e ligado a um cliente ou a uma tarefa. Para aproveitar um rascunho, escolha o destino: **Nova tarefa** (cria um Projeto com o texto no briefing) ou **Tarefa existente** (o texto entra no fim do briefing dela). O rascunho em si não muda.
 
 ## Captura rápida
 
@@ -69,22 +96,30 @@ Reúne tarefas e demandas concluídas. O período e os números ficam num painel
 - **Números do período:** tarefas concluídas, não planejadas e o tempo gasto fora do plano.
 - **Mostrar:** tudo, tarefas ou não planejadas, com a contagem de cada um, ao lado da busca.
 - **Copiar relatório:** copia o período em texto, pronto para colar numa mensagem.
-- **PDF:** abre a impressão do navegador com o relatório do período: cabeçalho com o período e a data em que foi gerado, os números, e uma tabela por dia (hora, o que foi feito, cliente ou quem pediu, tipo e tempo). Respeita o filtro e a busca da tela, numera as páginas e lê bem também em preto e branco. Para salvar o arquivo, escolha "Salvar como PDF" no destino da impressão.
-- **Ações da linha:** ao passar o mouse numa tarefa aparecem **Voltar ao quadro** (devolve para A fazer) e **Excluir** (pede um segundo clique). Clicar no título abre o card.
+- **PDF:** o nome sugerido do arquivo já traz o período, por exemplo "Relatório de atividades DONELY 01-10-2026 a 31-10-2026". Abre a impressão do navegador com o relatório do período: cabeçalho com o período e a data em que foi gerado, os números, e uma tabela por dia (hora, o que foi feito, cliente ou quem pediu, tipo e tempo). Respeita o filtro e a busca da tela, numera as páginas e lê bem também em preto e branco. Para salvar o arquivo, escolha "Salvar como PDF" no destino da impressão.
+- **Prévia:** clicar na linha abre o card, só para leitura. Uma demanda não planejada abre um resumo: quem pediu, quando foi capturada e finalizada, o tempo gasto e o que foi feito.
+- **Ações da linha:** ao passar o mouse numa tarefa aparecem **Voltar ao quadro** (devolve para A fazer) e **Excluir** (pede um segundo clique).
 
 ## Configurações
 
 - **Arquivar concluídas:** quanto tempo a tarefa fica em Concluído antes de ir para o Histórico (1, 3, 7 ou 14 dias).
 - **Tema:** claro, escuro ou automático (segue o sistema).
-- **Clientes:** a lista de clientes que aparece na Nova tarefa e no filtro da lista. O cliente é opcional: uma tarefa pode não ter nenhum. Também dá para criar um cliente novo direto na Nova tarefa ou no card.
+- **Clientes:** a lista de clientes que aparece no Novo card (Projeto) e no filtro da lista. O cliente é opcional: uma tarefa pode não ter nenhum. Também dá para criar um cliente novo direto na Nova tarefa ou no card.
 - **Tipos de tarefa:** a lista de tipos de entrega (Post, Carrossel, Vídeo…), que você pode editar.
+- **Quem pediu (Captura rápida):** as sugestões de origem têm um `×`, que tira a sugestão da lista. Isso não muda os pedidos já registrados. Quando você usa um nome tirado de novo, ele volta às sugestões.
+
+## Avisos
+
+Os avisos aparecem embaixo, no centro da tela, e somem sozinhos: em cerca de 3,5 segundos os simples, em 6 segundos os de erro e em 8 segundos os que têm ação (como **Desfazer**). Com o mouse em cima do aviso, o tempo para. Você também pode fechar com o `×`.
+
+Quando há uma versão nova do repositório, aparece um aviso e um botão com um ponto verde no topo. Ele mostra como atualizar: o DONELY confere o GitHub ao abrir e a cada 6 horas. Os seus dados não mudam na atualização.
 
 ## Seus dados
 
 Tudo fica na sua máquina, sem nuvem e sem conta. Nada sai dela.
 
-- Os dados ficam na pasta `app/dados/`: tarefas, checklist, histórico, demandas, clientes, configurações e também os arquivos anexados.
-- Excluir uma tarefa apaga também o checklist, os anexos e o histórico dela. Não há lixeira.
+- Os dados ficam na pasta `app/dados/`: tarefas, checklist, histórico, demandas, clientes, configurações, o Caderno (pessoas, anotações e rascunhos) e também os arquivos anexados.
+- Excluir uma tarefa apaga também o checklist, os anexos e o histórico dela. Não há lixeira: a exclusão é definitiva.
 - Para usar outro arquivo de banco, defina `DONELY_DB` no `app/.env` (veja `app/.env.example`).
 
 ## Backup

@@ -63,17 +63,20 @@ app/
 
 ## Banco de dados
 
-Um arquivo SQLite, com chaves estrangeiras ligadas e exclusão em cascata: apagar uma tarefa apaga o checklist, os anexos e os eventos dela.
+Um arquivo SQLite, com chaves estrangeiras ligadas e exclusão em cascata: apagar uma tarefa apaga o checklist, os anexos e os eventos dela; as anotações de uma pessoa saem junto com ela.
 
 | Tabela | O que guarda |
 |---|---|
-| `tarefas` | A tarefa: título, briefing (`notas`), cliente, tipo, prioridade, prazo, status, datas de conclusão e arquivamento. |
+| `tarefas` | A tarefa: modelo (`projeto` ou `rapido`), título, briefing (`notas`), cliente, tipo, prioridade, prazo, status, datas de conclusão e arquivamento. |
 | `checklist` | Itens do checklist de cada tarefa. |
-| `anexos` | Arquivos (o conteúdo fica no próprio banco). `papel` separa `material` de `referencia`. |
+| `anexos` | Arquivos (o conteúdo fica no próprio banco) ou links (`url`, sem conteúdo). `papel` separa `material` de `referencia`. |
 | `eventos` | O histórico de cada tarefa ("Moveu para Fazendo", "Prazo: 27/10"…). |
-| `demandas` | Os pedidos da Captura rápida, com o tempo cronometrado. |
+| `demandas` | Os pedidos da Captura rápida, com o tempo cronometrado e o registro do que foi feito. |
 | `clientes` | Os nomes dos clientes. |
-| `config` | Configurações: prazo de arquivamento, tema e tipos. |
+| `config` | Configurações: prazo de arquivamento, tema, tipos e sugestões ocultas de "Quem pediu". |
+| `pessoas` | Pessoas do Caderno. |
+| `anotacoes` | Anotações de cada pessoa, com data de criação e de edição. |
+| `rascunhos` | Rascunhos de ideias, com vínculo opcional a um cliente ou a uma tarefa. |
 
 **Migrações:** ficam numa lista em `db.ts`, aplicadas em ordem na abertura do banco. Para mudar o banco, adicione uma migração nova ao fim da lista; nunca edite uma que já existe.
 

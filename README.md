@@ -7,7 +7,8 @@ Não precisa de conta em serviço nenhum. Os dados ficam num arquivo na sua máq
 ## O que ele faz
 
 - **Fluxo em pastas.** Toda tarefa começa em A fazer e anda pelo fluxo com um botão por etapa: Iniciar, Concluir e Arquivar. Não há arrastar nem mover à mão, para o quadro refletir o que de fato aconteceu.
-- **Card de trabalho.** Cada tarefa tem briefing, referências, checklist e o material produzido, nessa ordem.
+- **Dois modelos de card.** O **Projeto** tem briefing, referências, checklist e o material produzido, nessa ordem. O **Rápido** tem só título, descrição, tipo, prazo, prioridade e checklist, para as tarefas do dia a dia.
+- **Caderno** (tecla `N`). Anotações por pessoa e rascunhos de ideias, em Markdown, com salvamento automático.
 - **Não planejadas.** A Captura rápida (tecla `C`) registra em segundos um pedido que chegou no meio do dia, e um cronômetro mede o tempo gasto nele.
 - **Histórico.** O que foi concluído vai sozinho para o Histórico depois de alguns dias, com relatório por semana, mês ou período, para copiar ou imprimir em PDF.
 - **Comemoração.** Cada tarefa concluída ganha uma animação da logo.
