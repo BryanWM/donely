@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
+import type { InfoVersao } from '../shared/dominio';
 import { criarApi } from './api';
+import { conferirAtualizacao, versaoInstalada } from './atualizacao';
 import { abrirBanco } from './db';
 import { Repositorio } from './repositorio';
 
@@ -30,19 +32,23 @@ const criarAtalho = process.env.WSL_DISTRO_NAME ? () => new Promise<string>((ok,
     else ok(ultima(saida).replace(/^Atalho criado: /, ''));
   });
 }) : undefined;
-// Versão: o commit instalado contra o da branch padrão no GitHub. ls-remote só consulta (não baixa nem muda nada);
-// usa as credenciais do git da pessoa, então funciona com repositório privado para quem tem acesso.
-const git = (...args: string[]) => new Promise<string>((ok, falha) => {
-  execFile('git', args, { cwd: RAIZ_APP, timeout: 15_000, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } }, (erro, saida) => (erro ? falha(erro) : ok(saida.trim())));
-});
-const versao = async () => {
-  const [local, remota] = [await git('rev-parse', 'HEAD'), (await git('ls-remote', 'origin', 'HEAD')).split(/\s/)[0]];
-  if (!remota || remota === local) return { desatualizada: false };
-  // a do GitHub já está dentro da instalada (quem está à frente é você): não é atualização
-  const dentro = await git('merge-base', '--is-ancestor', remota, local).then(() => true, () => false);
-  return { desatualizada: !dentro, pasta: resolve(RAIZ_APP, '..') };
-};
-app.route('/api', criarApi(repo, { desligar, criarAtalho, versao }));
+// Atualizações: confere a main do GitHub ao iniciar e depois a cada hora. Se a rede ainda não estiver pronta
+// (comum logo ao abrir pelo atalho), tenta de novo em 1 e em 2 minutos. O resultado também sai no terminal.
+let infoVersao: InfoVersao = { atual: versaoInstalada(RAIZ_APP), desatualizada: false };
+async function conferirVersao(tentativa = 1) {
+  try {
+    infoVersao = await conferirAtualizacao(RAIZ_APP);
+    console.log(infoVersao.desatualizada
+      ? `Atualização disponível: a main tem ${infoVersao.faltam} alteração(ões) que esta cópia (versão ${infoVersao.atual}) não tem.`
+      : `Versão ${infoVersao.atual}: em dia com a main.`);
+  } catch (e) {
+    console.log(`Não foi possível verificar atualizações (tentativa ${tentativa}): ${e instanceof Error ? e.message : e}`);
+    if (tentativa < 3) setTimeout(() => conferirVersao(tentativa + 1), tentativa * 60_000);
+  }
+}
+conferirVersao();
+setInterval(() => conferirVersao(), 3_600_000);
+app.route('/api', criarApi(repo, { desligar, criarAtalho, versao: async () => infoVersao }));
 
 // Em produção (npm start) o próprio servidor entrega a interface já compilada.
 if (existsSync(INTERFACE)) {

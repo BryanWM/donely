@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import logo from '../../../brand/donely-icone.svg';
-import { COLUNAS, diaLocal, estaArquivada, formatarDuracao, inicioDaSemana, NOME_STATUS, situacaoPrazo, tempoDemanda, type Demanda, type Status, type Tarefa } from '../shared/dominio';
+import { COLUNAS, diaLocal, estaArquivada, formatarDuracao, inicioDaSemana, NOME_STATUS, situacaoPrazo, tempoDemanda, type Demanda, type InfoVersao, type Status, type Tarefa } from '../shared/dominio';
 import type { Acoes } from './acoes';
 import { api, type Estado } from './api';
 import { Caderno, type SecaoCaderno } from './componentes/Caderno';
@@ -43,19 +43,60 @@ function Contagem({ n }: { n: number }) {
   return <span ref={ref} className="contagem">{n}</span>;
 }
 
-/** Passo a passo para atualizar: o código vem do GitHub; os dados (app/dados) ficam fora do git e não mudam. */
-function AtualizarVersao({ pasta, desligavel, onAviso }: { pasta: string; desligavel: boolean; onAviso: (texto: string) => void }) {
-  const comando = `cd "${pasta}" && git pull && cd app && npm install`;
+type Terminal = 'wsl' | 'linux' | 'macos' | 'cmd' | 'powershell';
+const TERMINAIS: { id: Terminal; nome: string; onde: string }[] = [
+  { id: 'wsl', nome: 'WSL', onde: 'No terminal do WSL (Ubuntu)' },
+  { id: 'linux', nome: 'Linux', onde: 'No terminal' },
+  { id: 'macos', nome: 'macOS', onde: 'No app Terminal' },
+  { id: 'cmd', nome: 'CMD', onde: 'No Prompt de Comando (cmd)' },
+  { id: 'powershell', nome: 'PowerShell', onde: 'No PowerShell' },
+];
+
+/** Atualizar = baixar a main (git pull) e instalar as dependências novas, na pasta do DONELY. */
+function comandoAtualizar(terminal: Terminal, pasta: string) {
+  // cmd: /d troca de drive junto (C: para D:). PowerShell 5.1 não tem &&: if ($?) só segue se o git pull deu certo.
+  if (terminal === 'cmd') return `cd /d "${pasta}" && git pull && cd app && npm install`;
+  if (terminal === 'powershell') return `cd "${pasta}"; git pull; if ($?) { cd app; npm install }`;
+  return `cd "${pasta}" && git pull && cd app && npm install`;
+}
+
+/** O que mudou na main e o passo a passo para atualizar: o código vem do GitHub; os dados (app/dados) ficam fora do git e não mudam. */
+function AtualizarVersao({ info, desligavel, onAviso }: { info: InfoVersao; desligavel: boolean; onAviso: (texto: string) => void }) {
+  // começa no terminal que o servidor sugere (Windows sem WSL: PowerShell); a pessoa troca se usar outro
+  const [terminal, setTerminal] = useState<Terminal>(info.sistema === 'windows' ? 'powershell' : info.sistema ?? 'wsl');
+  const { onde } = TERMINAIS.find((t) => t.id === terminal)!;
+  const comando = comandoAtualizar(terminal, info.pasta ?? '');
   const copiar = async () => {
-    try { await navigator.clipboard.writeText(comando); onAviso('Comando copiado. Cole no terminal do WSL.'); }
+    try { await navigator.clipboard.writeText(comando); onAviso(`Comando copiado. Cole ${onde.charAt(0).toLowerCase()}${onde.slice(1)}.`); }
     catch { onAviso('O navegador não deixou copiar. Selecione o comando e copie à mão.'); }
   };
+  const alteracoes = info.alteracoes ?? [];
+  const faltam = info.faltam ?? alteracoes.length;
   return (
     <div className="atualizar-versao">
-      <p>O repositório do DONELY tem uma versão mais nova que a sua. Seus dados não mudam: ficam em <code>app/dados</code>, fora do git.</p>
+      <p>
+        Sua versão do DONELY está desatualizada: você tem a <strong>ver. {info.atual}</strong>
+        {info.disponivel && info.disponivel !== info.atual ? <>, e a branch <code>main</code> do GitHub já está na <strong>ver. {info.disponivel}</strong></> : null}.
+        {' '}A <code>main</code> tem {faltam === 1 ? '1 alteração' : `${faltam} alterações`} que esta cópia ainda não tem.
+      </p>
+      {alteracoes.length > 0 && (
+        <ul className="versao-alteracoes">
+          {alteracoes.map((a) => <li key={a.hash}><code>{a.hash}</code>{a.titulo}</li>)}
+          {faltam > alteracoes.length && <li className="sem-valor">e mais {faltam - alteracoes.length}</li>}
+        </ul>
+      )}
+      <p>Para atualizar o DONELY, siga os passos abaixo. Seus dados não mudam: ficam em <code>app/dados</code>, fora do git.</p>
+      <div className="terminal-escolha">
+        <span>Onde você roda o DONELY:</span>
+        <div className="segmentado" role="radiogroup" aria-label="Sistema ou terminal">
+          {TERMINAIS.map((t) => (
+            <button key={t.id} type="button" role="radio" aria-checked={terminal === t.id} className={terminal === t.id ? 'ativo' : ''} onClick={() => setTerminal(t.id)}>{t.nome}</button>
+          ))}
+        </div>
+      </div>
       <ol>
         <li>{desligavel ? <>Desligue o DONELY (botão <strong>Desligar</strong>, no topo).</> : <>Pare o DONELY no terminal com <kbd>Ctrl</kbd>+<kbd>C</kbd>.</>}</li>
-        <li>No terminal do WSL, rode:
+        <li>{onde}, rode:
           <span className="comando"><code>{comando}</code><button type="button" className="btn texto pequeno" onClick={copiar}>Copiar</button></span>
         </li>
         <li>Abra o DONELY de novo{desligavel ? ' pelo atalho' : ''}.</li>
@@ -85,7 +126,7 @@ export function App() {
   // última área do Caderno usada (Pessoas ou Ideias): vale enquanto o app estiver aberto
   const [secaoCaderno, setSecaoCaderno] = useState<SecaoCaderno>('pessoas');
   // pasta do projeto quando o repositório tem versão nova (mostra o botão de atualização no topo)
-  const [novaVersao, setNovaVersao] = useState<string | null>(null);
+  const [infoVersao, setInfoVersao] = useState<InfoVersao | null>(null);
   const [aviso, setAviso] = useState<Aviso | null>(null);
   // saindo: o aviso faz a saída animada antes de sair do DOM; pausado: o mouse está em cima dele
   const [saindo, setSaindo] = useState(false);
@@ -106,18 +147,19 @@ export function App() {
   }, []);
   useEffect(() => { carregar(); }, [carregar]);
 
-  // Versão nova no repositório: pergunta ao abrir e a cada 6 horas; avisa uma vez por sessão, e o botão do topo fica
+  // Versão: o servidor confere a main ao iniciar e a cada hora; a interface pergunta o resultado ao abrir e a cada 2 minutos
+  // (a primeira conferência pode terminar depois que a página abriu). Avisa uma vez por sessão; o alerta do topo fica.
   useEffect(() => {
     let avisou = false;
     const conferir = async () => {
       try {
         const r = await api.versao();
-        setNovaVersao(r.desatualizada ? r.pasta ?? '' : null);
-        if (r.desatualizada && !avisou) { avisou = true; avisar('Há uma versão nova do DONELY.', { acao: { rotulo: 'Como atualizar', fn: () => setJanela('versao') } }); }
+        setInfoVersao(r);
+        if (r.desatualizada && !avisou) { avisou = true; avisar('Há uma atualização do DONELY disponível.', { acao: { rotulo: 'Ver detalhes', fn: () => setJanela('versao') } }); }
       } catch { /* sem servidor: tenta na próxima */ }
     };
     conferir();
-    const i = setInterval(conferir, 6 * 3_600_000);
+    const i = setInterval(conferir, 120_000);
     return () => clearInterval(i);
   }, []);
 
@@ -165,9 +207,10 @@ export function App() {
   // Dica do dia: uma vez por dia, na primeira carga da página. O dia fica no navegador, sem gravar nada no servidor.
   const dicaChecada = useRef(false);
   useEffect(() => {
-    if (!estado || dicaChecada.current) return;
+    // espera a resposta da versão: com atualização pendente, o aviso dela tem a vez e a dica fica para outra abertura
+    if (!estado || !infoVersao || dicaChecada.current) return;
     dicaChecada.current = true;
-    if (!dicaDiariaLigada()) return;
+    if (infoVersao.desatualizada || !dicaDiariaLigada()) return;
     try {
       if (localStorage.getItem('donely-dica') === hoje) return;
       localStorage.setItem('donely-dica', hoje);
@@ -176,7 +219,7 @@ export function App() {
       acao: { rotulo: 'Ver dica', fn: () => abrirConfig('dicas') },
       acaoSecundaria: { rotulo: 'Não exibir novamente', fn: () => definirDicaDiaria(false) },
     });
-  }, [estado, hoje]);
+  }, [estado, infoVersao, hoje]);
   const fecharAviso = () => setSaindo(true);
   // Mais uma concluída: comemora com a logo animada (quem pediu menos movimento fica só com o aviso).
   const comemorar = () => { if (!matchMedia('(prefers-reduced-motion: reduce)').matches) setComemorando(true); };
@@ -305,7 +348,7 @@ export function App() {
     <>
       <div className="faixa" inert={sobreposto}><div className="faixa-conteudo">
       <header className="topo">
-        <div className="marca"><img src={logo} alt="" width={30} height={30} /><span>DONELY</span></div>
+        <div className="marca"><img src={logo} alt="" width={30} height={30} /><span>DONELY</span>{infoVersao?.atual && <small className="versao-app">ver. {infoVersao.atual}</small>}</div>
         {/* título, data e resumo na mesma linha da marca: a altura fica para a lista de tarefas */}
         <div className="titulo-pagina"><h1>Minhas tarefas</h1><p>{dataExtenso}</p></div>
         <ul className="indicadores" aria-label="Resumo">
@@ -330,9 +373,9 @@ export function App() {
           <button type="button" className="btn captura" onClick={() => setJanela('caderno')} aria-keyshortcuts="N" title="Caderno: pessoas e ideias (tecla N)">
             <Icone nome="notas" /><span className="rotulo-btn">Caderno</span><kbd>N</kbd>
           </button>
-          {novaVersao !== null && (
-            <button type="button" className="btn redondo atualizar" onClick={() => setJanela('versao')} aria-label="Há uma versão nova do DONELY: ver como atualizar" title="Versão nova disponível">
-              <Icone nome="sincronizar" tamanho={18} /><span className="ponto-novo" aria-hidden="true" />
+          {infoVersao?.desatualizada && (
+            <button type="button" className="btn redondo atualizar" onClick={() => setJanela('versao')} aria-label="Atualização do DONELY disponível: ver detalhes" title="Atualização disponível">
+              <Icone nome="alerta" tamanho={18} />
             </button>
           )}
           <button type="button" className="btn redondo" onClick={() => abrirConfig()} aria-label="Configurações" title="Configurações"><Icone nome="ajustes" tamanho={18} /></button>
@@ -380,8 +423,8 @@ export function App() {
       {janela === 'caderno' && <Caderno secao={secaoCaderno} onSecao={setSecaoCaderno} hoje={hoje} tarefas={estado.tarefas} clientes={estado.clientes} acoes={acoes}
         onAbrirTarefa={setAberta} onAviso={avisar} onFechar={() => setJanela(null)} />}
       {janela === 'versao' && (
-        <Modal titulo="Versão nova do DONELY" onFechar={() => setJanela(null)}>
-          <AtualizarVersao pasta={novaVersao ?? ''} desligavel={estado.desligavel} onAviso={avisar} />
+        <Modal titulo="Atualização disponível" onFechar={() => setJanela(null)}>
+          {infoVersao && <AtualizarVersao info={infoVersao} desligavel={estado.desligavel} onAviso={avisar} />}
         </Modal>
       )}
       {janela === 'config' && <Configuracoes config={estado.config} clientes={estado.clientes} acoes={acoes} atalho={estado.atalho} abaInicial={abaConfig} onFechar={() => setJanela(null)} />}
