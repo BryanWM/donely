@@ -27,7 +27,7 @@ Abra **http://localhost:3333**. Para parar, aperte `Ctrl+C` no terminal.
 
 O Node avisa ao iniciar que o SQLite embutido é experimental. É esperado e não afeta o uso.
 
-**Atalho na área de trabalho (Windows com WSL):** com o app aberto, vá em **Configurações › Atalho na área de trabalho › Criar atalho** (ou rode `bash scripts/criar-atalho.sh`). O atalho DONELY, com o ícone da marca, sobe o app e abre o navegador. Aberto por ele, o app ganha o botão **Desligar** no topo. Detalhes no [guia de uso](docs/uso.md#atalho-na-área-de-trabalho).
+**Atalho na área de trabalho (Windows com WSL):** com o app aberto, vá em **Configurações › Atalho › Criar atalho** (ou rode `bash scripts/criar-atalho.sh`). O atalho DONELY, com o ícone da marca, sobe o app e abre o navegador. Aberto por ele, o app ganha o botão **Desligar** no topo. Detalhes no [guia de uso](docs/uso.md#atalho-na-área-de-trabalho).
 
 ## Seus dados e backup
 

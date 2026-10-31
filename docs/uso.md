@@ -102,15 +102,22 @@ Reúne tarefas e demandas concluídas. O período e os números ficam num painel
 
 ## Configurações
 
-- **Arquivar concluídas:** quanto tempo a tarefa fica em Concluído antes de ir para o Histórico (1, 3, 7 ou 14 dias).
-- **Tema:** claro, escuro ou automático (segue o sistema).
+A janela tem um painel à esquerda com as seções. Cada seção mostra à direita o que ela controla, com uma linha de explicação embaixo do título.
+
+- **Tarefas:** quanto tempo a tarefa fica em Concluído antes de ir para o Histórico (1, 3, 7 ou 14 dias).
+- **Aparência:** tema claro, escuro ou automático (segue o sistema).
 - **Clientes:** a lista de clientes que aparece no Novo card (Projeto) e no filtro da lista. O cliente é opcional: uma tarefa pode não ter nenhum. Também dá para criar um cliente novo direto na Nova tarefa ou no card.
 - **Tipos de tarefa:** a lista de tipos de entrega (Post, Carrossel, Vídeo…), que você pode editar.
-- **Quem pediu (Captura rápida):** as sugestões de origem têm um `×`, que tira a sugestão da lista. Isso não muda os pedidos já registrados. Quando você usa um nome tirado de novo, ele volta às sugestões.
+- **Atalho:** aparece só no Windows com WSL. Veja [Atalho na área de trabalho](#atalho-na-área-de-trabalho).
+- **Dicas de IA:** os três prompts para organizar ideias, conversas e tarefas com uma IA gratuita, com o jeito de pedir em cada chat. A seção também tem a opção **Mostrar ou Não mostrar** a dica do dia. Os prompts completos estão em [prompt-ia.md](prompt-ia.md).
+
+As sugestões de **Quem pediu** não ficam nas configurações: na Captura rápida, cada sugestão tem um `×` que a tira da lista. Isso não muda os pedidos já registrados, e quando você usa esse nome de novo, ele volta às sugestões.
 
 ## Avisos
 
 Os avisos aparecem embaixo, no centro da tela, e somem sozinhos: em cerca de 3,5 segundos os simples, em 6 segundos os de erro e em 8 segundos os que têm ação (como **Desfazer**). Com o mouse em cima do aviso, o tempo para. Você também pode fechar com o `×`.
+
+**Dica do dia:** uma vez por dia, ao abrir o app, aparece um aviso com uma dica sobre IA gratuita. O botão **Ver dica** abre as Configurações na seção Dicas de IA. O botão **Não exibir novamente** desliga a dica do dia; para ligar de novo, use **Mostrar** na seção Dicas de IA. Essa escolha fica guardada no navegador.
 
 Quando há uma versão nova do repositório, aparece um aviso e um botão com um ponto verde no topo. Ele mostra como atualizar: o DONELY confere o GitHub ao abrir e a cada 6 horas. Os seus dados não mudam na atualização.
 
@@ -163,7 +170,7 @@ cp -r app/dados "/mnt/c/Users/SEU-USUÁRIO/Documents/backup-donely-$(date +%F)"
 
 ## Atalho na área de trabalho
 
-No Windows com WSL, crie o atalho uma vez. O jeito mais fácil é pelo próprio app: abra **Configurações** e, em **Atalho na área de trabalho**, clique em **Criar atalho**. A seção só aparece quando o DONELY roda no WSL.
+No Windows com WSL, crie o atalho uma vez. O jeito mais fácil é pelo próprio app: abra **Configurações**, escolha a seção **Atalho** no painel da esquerda e clique em **Criar atalho**. A seção só aparece quando o DONELY roda no WSL.
 
 Pelo terminal, o mesmo atalho sai com:
 
