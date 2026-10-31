@@ -1,10 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type ClipboardEvent, type FormEvent } from 'react';
 import {
   diasParaArquivar, estaArquivada, NOME_PRIORIDADE, NOME_STATUS, PRIORIDADES, situacaoPrazo,
   type Cliente, type Config, type Tarefa,
 } from '../../shared/dominio';
 import type { Acoes } from '../acoes';
 import { MaterialProduzido } from './Anexos';
+import { linhasDoTexto } from './Checklist';
 import { Prioridade, SeloPrazo } from './Cartao';
 import { Icone } from './Icone';
 import { Modal } from './Modal';
@@ -63,6 +64,15 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
     if (!novoItem.trim()) return;
     await acoes.adicionarItem(t.id, novoItem.trim());
     setNovoItem('');
+  }
+
+  // Colar uma lista: cada linha vira um item.
+  async function colarItens(e: ClipboardEvent<HTMLInputElement>) {
+    const texto = e.clipboardData.getData('text');
+    if (!texto.includes('\n')) return;
+    e.preventDefault();
+    setNovoItem('');
+    for (const linha of linhasDoTexto([novoItem, texto].join('\n'))) await acoes.adicionarItem(t.id, linha);
   }
 
 
@@ -127,32 +137,8 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
               </div>
             </li>
 
-            <li className="passo">
-              <span className="passo-num" aria-hidden="true">3</span>
-              <div className="passo-corpo">
-                <h3 className="passo-titulo">Checklist {t.checklist.length > 0 && <span className="contagem">{feitos}/{t.checklist.length}</span>}
-                  {t.checklist.length > 0 && <span className="barra" aria-hidden="true"><i style={{ width: `${(feitos / t.checklist.length) * 100}%` }} /></span>}</h3>
-                <ul className="lista-ios checklist">
-                  {t.checklist.map((i) => (
-                    <li key={i.id} className="linha-ios item-check">
-                      <label><input type="checkbox" checked={i.feito} disabled={leitura} onChange={(e) => acoes.marcarItem(t.id, i.id, e.target.checked)} />
-                        <span className={i.feito ? 'riscado' : ''}>{i.texto}</span></label>
-                      {!leitura && <button type="button" className="btn icone-so" onClick={() => acoes.removerItem(t.id, i.id)} aria-label={`Remover ${i.texto}`}><Icone nome="x" tamanho={14} /></button>}
-                    </li>
-                  ))}
-                </ul>
-                {leitura ? !t.checklist.length && <p className="passo-vazio">Sem itens.</p> : (
-                  <form className="checklist-novo" onSubmit={addItem}>
-                    <Icone nome="mais" tamanho={15} />
-                    <label className="sr" htmlFor="novo-item">Novo item</label>
-                    <input id="novo-item" required value={novoItem} onChange={(e) => setNovoItem(e.target.value)} placeholder="Adicionar item e Enter" autoComplete="off" />
-                  </form>
-                )}
-              </div>
-            </li>
-
             <li className="passo passo-entrega">
-              <span className="passo-num" aria-hidden="true">4</span>
+              <span className="passo-num" aria-hidden="true">3</span>
               <div className="passo-corpo">
                 <h3 className="passo-titulo">Material produzido <span className="contagem">{materiais.length || ''}</span></h3>
                 <MaterialProduzido somenteLeitura={leitura} itens={materiais.map((a) => ({ chave: a.id, nome: a.nome, tipo: a.tipo, url: a.url ?? `/api/anexos/${a.id}`, link: Boolean(a.url) }))}
@@ -214,6 +200,27 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
                 </span>
               </li>
             </ul>
+            )}
+          </section>
+
+          <section className="lado-checklist">
+            <h3 className="passo-titulo">Checklist {t.checklist.length > 0 && <span className="contagem">{feitos}/{t.checklist.length}</span>}
+              {t.checklist.length > 0 && <span className="barra" aria-hidden="true"><i style={{ width: `${(feitos / t.checklist.length) * 100}%` }} /></span>}</h3>
+            <ul className="lista-ios checklist">
+              {t.checklist.map((i) => (
+                <li key={i.id} className="linha-ios item-check">
+                  <label><input type="checkbox" checked={i.feito} disabled={leitura} onChange={(e) => acoes.marcarItem(t.id, i.id, e.target.checked)} />
+                    <span className={i.feito ? 'riscado' : ''}>{i.texto}</span></label>
+                  {!leitura && <button type="button" className="btn icone-so" onClick={() => acoes.removerItem(t.id, i.id)} aria-label={`Remover ${i.texto}`}><Icone nome="x" tamanho={14} /></button>}
+                </li>
+              ))}
+            </ul>
+            {leitura ? !t.checklist.length && <p className="passo-vazio">Sem itens.</p> : (
+              <form className="checklist-novo" onSubmit={addItem}>
+                <Icone nome="mais" tamanho={15} />
+                <label className="sr" htmlFor="novo-item">Novo item</label>
+                <input id="novo-item" required value={novoItem} onChange={(e) => setNovoItem(e.target.value)} onPaste={colarItens} placeholder="Adicionar item e Enter" autoComplete="off" />
+              </form>
             )}
           </section>
 

@@ -76,7 +76,7 @@ export function Quadro({ coluna, tarefas, config, hoje, acoes, onAbrir, onConfig
         {lista.length
           ? lista.map((t) => <Cartao key={t.id} tarefa={t} hoje={hoje} arquivarAposDias={config.arquivarAposDias}
               onAbrir={() => onAbrir(t.id)}
-              onIniciar={() => acoes.mover(t.id, 'fazendo')} onConcluir={() => acoes.mover(t.id, 'concluido')} onArquivar={() => acoes.arquivar(t.id)} onExcluir={() => acoes.excluir(t.id)} />)
+              onIniciar={() => acoes.mover(t.id, 'fazendo')} onConcluir={() => acoes.mover(t.id, 'concluido')} onArquivar={() => acoes.arquivar(t.id)} />)
           : filtrando && daColuna.length < noQuadro.filter((t) => t.status === coluna).length ? (
             <div className="vazio">
               <p>Nenhuma tarefa em {COLUNAS.find((c) => c.id === coluna)!.nome} com esses filtros.</p>

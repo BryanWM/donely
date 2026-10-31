@@ -1,6 +1,9 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import type { ItemChecklist } from '../../shared/dominio';
 import { Icone } from './Icone';
+
+/** Uma tarefa por linha: o que foi colado com quebras de linha vira um item cada, sem linhas vazias. */
+export const linhasDoTexto = (texto: string) => texto.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
 interface Props {
   itens: ItemChecklist[];
@@ -26,6 +29,15 @@ export function Checklist({ itens, somenteLeitura, onAdicionar, onEditar, onMarc
     await onAdicionar(texto);
   }
 
+  // Colar uma lista: cada linha vira um item. Uma linha só deixa o colar comum.
+  async function colar(e: ClipboardEvent<HTMLInputElement>) {
+    const texto = e.clipboardData.getData('text');
+    if (!texto.includes('\n')) return;
+    e.preventDefault();
+    setNovo('');
+    for (const linha of linhasDoTexto([novo, texto].join('\n'))) await onAdicionar(linha);
+  }
+
   return (
     <div className="checklist">
       {itens.length > 0 && (
@@ -48,7 +60,7 @@ export function Checklist({ itens, somenteLeitura, onAdicionar, onEditar, onMarc
       {!somenteLeitura && (
         <div className="checklist-novo">
           <Icone nome="mais" tamanho={14} />
-          <input aria-label="Novo item do checklist" value={novo} onChange={(e) => setNovo(e.target.value)} onKeyDown={adicionar} placeholder="Adicionar item e Enter" />
+          <input aria-label="Novo item do checklist" value={novo} onChange={(e) => setNovo(e.target.value)} onKeyDown={adicionar} onPaste={colar} placeholder="Adicionar item e Enter" />
         </div>
       )}
     </div>

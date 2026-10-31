@@ -26,14 +26,11 @@ interface Props {
   onIniciar: () => Promise<void>;
   onConcluir: () => Promise<void>;
   onArquivar: () => Promise<void>;
-  onExcluir: () => Promise<void>;
 }
 
-/** Uma tarefa como linha da lista. As colunas seguem o cabeçalho em Quadro (.lista-cab). */
-export function Cartao({ tarefa: t, hoje, arquivarAposDias, onAbrir, onIniciar, onConcluir, onArquivar, onExcluir }: Props) {
+/** Uma tarefa como linha da lista. As colunas seguem o cabeçalho em Quadro (.lista-cab). Excluir fica dentro do card. */
+export function Cartao({ tarefa: t, hoje, arquivarAposDias, onAbrir, onIniciar, onConcluir, onArquivar }: Props) {
   const [ocupado, setOcupado] = useState(false);
-  // excluir pede um segundo clique; se o foco sair antes, volta ao normal (como no botão Desligar)
-  const [confirmarExclusao, setConfirmarExclusao] = useState(false);
   const linha = useRef<HTMLElement>(null);
   // Uma ação por vez: o botão trava até a resposta (clique duplo não move nem conclui duas vezes).
   // Com destino, a linha "viaja" até a aba, mas só depois que a ação deu certo (a linha saiu da lista):
@@ -61,12 +58,6 @@ export function Cartao({ tarefa: t, hoje, arquivarAposDias, onAbrir, onIniciar, 
           <Icone nome="check" tamanho={13} />{ocupado ? 'Concluindo…' : 'Concluir'}
         </button>
       )}
-      <button type="button" className={`btn icone-so cartao-excluir ${confirmarExclusao ? 'confirmando' : ''}`} disabled={ocupado}
-        aria-label={confirmarExclusao ? `Confirmar: excluir ${t.titulo}` : `Excluir ${t.titulo}`} title={confirmarExclusao ? 'Clique de novo para excluir' : 'Excluir card'}
-        onBlur={() => setConfirmarExclusao(false)}
-        onClick={() => { if (!confirmarExclusao) { setConfirmarExclusao(true); return; } setConfirmarExclusao(false); agir(onExcluir)(); }}>
-        <Icone nome="lixeira" tamanho={14} />
-      </button>
     </span>
   );
 
