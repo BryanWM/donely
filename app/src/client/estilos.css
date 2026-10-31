@@ -134,6 +134,7 @@ input[type='checkbox']:checked::after { content: ''; width: 10px; height: 6px; m
 .topo { display: flex; align-items: center; gap: 20px; height: 68px; }
 .marca img { box-sizing: content-box; padding: 5px; border-radius: 10px; background: var(--marca-fundo); box-shadow: var(--sombra-cartao); }
 .marca { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; letter-spacing: 0.05em; }
+.marca .versao-app { align-self: flex-end; margin: 0 0 4px -4px; font-size: 11px; font-weight: 600; letter-spacing: 0; color: var(--texto-3); white-space: nowrap; }
 /* título e indicadores nunca encolhem (encolhidos, o texto passava por cima do vizinho); quem cede é o texto do cronômetro */
 .topo-acoes { flex: 0 1 auto; min-width: 0; display: flex; gap: 10px; }
 .topo-acoes > :not(.cronometro) { flex: none; }
@@ -565,7 +566,9 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 /* ---------- card da tarefa: fluxo de trabalho, minimalista ---------- */
 .modal-grande { background: var(--superficie); }
 .modal-grande .modal-corpo { padding: 28px 32px 32px; }
-.card { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(250px, 1fr); gap: 40px; align-items: start; }
+/* a coluna da direita estica até a altura do card: o checklist fica no meio dela (margin auto) */
+.card { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(250px, 1fr); gap: 40px; align-items: stretch; }
+.lado-checklist { margin: auto 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .card-fluxo { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 
 .card-cab { display: flex; flex-direction: column; gap: 4px; }
@@ -692,6 +695,11 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .rascunho-item { position: relative; display: flex; align-items: flex-start; border-radius: 12px; background: var(--cartao-tarefa); box-shadow: var(--sombra-cartao); }
 .rascunho-item:hover { background: linear-gradient(var(--linha-hover), var(--linha-hover)), var(--cartao-tarefa); }
 .rascunho-abrir { all: unset; box-sizing: border-box; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; padding: 14px 16px; cursor: pointer; border-radius: 12px; }
+/* prévia: só as duas primeiras linhas, com reticências; o texto inteiro aparece ao abrir a ideia */
+.rascunho-previa { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 14px; line-height: 1.5; color: var(--texto-2); white-space: pre-line; }
+/* linha com o rótulo em cima e o campo embaixo (Transformar em tarefa) */
+.linha-ios.linha-base { flex-direction: column; align-items: stretch; gap: 2px; padding: 10px 16px; }
+.linha-base input:not([type='checkbox']) { text-align: left; padding: 7px 10px; margin: 0 -10px; }
 .rascunho-abrir strong { font-size: 15.5px; font-weight: 700; }
 .rascunho-abrir .sem-titulo { color: var(--texto-2); font-weight: 600; }
 .rascunho-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--texto-3); }
@@ -703,7 +711,8 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .editor-barra { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .editor-barra .nota-estado { display: inline-flex; align-items: center; gap: 4px; }
 .editor-vinculo select { max-width: 260px; height: 32px; min-height: 0; padding-block: 0; font-size: 13.5px; }
-.editor-folha { flex: 1; display: flex; flex-direction: column; gap: 6px; min-height: 420px; padding: 20px 24px; border-radius: 14px; background: var(--cartao-tarefa); box-shadow: var(--sombra-cartao); }
+/* flex: 1 0 auto: a folha cresce com o texto (a rolagem é do Caderno); com flex: 1 ela encolhia e o conteúdo vazava da caixa */
+.editor-folha { flex: 1 0 auto; display: flex; flex-direction: column; gap: 6px; min-height: 420px; padding: 20px 24px; border-radius: 14px; background: var(--cartao-tarefa); box-shadow: var(--sombra-cartao); }
 .editor-titulo { font-size: 24px; font-weight: 700; letter-spacing: -0.015em; background: transparent; padding-inline: 8px; margin-inline: -8px; }
 .editor-texto { flex: 1; min-height: 320px; resize: none; font-size: 16px; line-height: 1.7; background: transparent; padding-inline: 8px; margin-inline: -8px; }
 .transformar-destino { align-self: flex-start; }
@@ -728,8 +737,13 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .markdown table { border-collapse: collapse; font-size: 0.95em; }
 .markdown th, .markdown td { padding: 5px 10px; border: 1px solid var(--separador); text-align: left; }
 .dica-md { margin: 0; font-size: 12px; color: var(--texto-3); }
-.btn.redondo.atualizar { position: relative; color: var(--acao); }
-.ponto-novo { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--sucesso); box-shadow: 0 0 0 2px var(--superficie); }
+/* atualização disponível: alerta âmbar no topo */
+.btn.redondo.atualizar { background: var(--atencao-fundo); color: var(--atencao); }
+.btn.redondo.atualizar:hover { background: color-mix(in oklch, var(--atencao-fundo), var(--atencao) 14%); }
+.versao-alteracoes { margin: 0; padding: 10px 14px; list-style: none; display: flex; flex-direction: column; gap: 6px; border-radius: 10px; background: var(--preenchimento); font-size: 13.5px; max-height: 220px; overflow-y: auto; }
+.versao-alteracoes li { display: flex; gap: 10px; }
+.terminal-escolha { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; font-size: 14px; color: var(--texto-2); }
+.versao-alteracoes code { flex: none; color: var(--texto-3); }
 .atualizar-versao { display: flex; flex-direction: column; gap: 14px; font-size: 14.5px; line-height: 1.5; }
 .atualizar-versao ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 12px; }
 .atualizar-versao code { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 13px; }
@@ -759,6 +773,12 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .dica-cab .grupo-nota { padding: 0; }
 .dica-pedidos { display: flex; flex-direction: column; gap: 4px; }
 .dica-pedidos code { font-size: 13px; overflow-wrap: anywhere; }
+.tags-filtro { width: fit-content; max-width: 100%; margin: 0 0 14px; flex-wrap: wrap; }
+.tags-rascunho { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; }
+.tags-rascunho .chip button { all: unset; display: inline-flex; margin-left: 4px; cursor: pointer; color: var(--texto-3); }
+.tags-rascunho .chip button:hover { color: var(--texto); }
+.tag-nova { width: 170px; height: 30px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font-size: 14px; }
+.tag-nova:focus { background: var(--preenchimento); }
 
 /* ---------- card rápido: escolha de modelo, checklist e linha da lista ---------- */
 .escolha-card { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; }
