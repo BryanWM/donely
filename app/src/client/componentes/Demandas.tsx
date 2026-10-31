@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { diaLocal, estadoDemanda, formatarDuracao, somarDias, tempoDemanda, type Demanda } from '../../shared/dominio';
 import type { Acoes } from '../acoes';
 import { Icone } from './Icone';
@@ -24,6 +24,17 @@ interface Props { demandas: Demanda[]; hoje: string; acoes: Acoes; onCapturar: (
 export function Demandas({ demandas, hoje, acoes, onCapturar }: Props) {
   const [dia, setDia] = useState(hoje);
   const agora = useAgora(demandas.some((d) => d.iniciadaEm));
+  // registro aberto: finalizar (com o que foi feito) ou escrever/corrigir o registro de uma já finalizada
+  const [registrando, setRegistrando] = useState<{ id: string; texto: string; finalizar: boolean } | null>(null);
+  const [gravando, setGravando] = useState(false);
+
+  async function gravarRegistro(e: FormEvent) {
+    e.preventDefault();
+    if (!registrando || gravando) return;
+    setGravando(true);
+    try { if (await acoes.registroDemanda(registrando.id, registrando.texto, registrando.finalizar)) setRegistrando(null); }
+    finally { setGravando(false); }
+  }
 
   const doDia = demandas.filter((d) => diaDe(d.capturadaEm) === dia)
     .sort((a, b) => ORDEM[estadoDemanda(a)] - ORDEM[estadoDemanda(b)] || b.capturadaEm.localeCompare(a.capturadaEm));
@@ -41,6 +52,7 @@ export function Demandas({ demandas, hoje, acoes, onCapturar }: Props) {
         <span className="cel cel-descricao">
           <span className="descricao">{d.descricao}</span>
           {d.prioridade === 'urgente' && <span className="selo selo-erro">Urgente</span>}
+          {d.registro && registrando?.id !== d.id && <span className="registro-demanda" title={d.registro}>{d.registro}</span>}
         </span>
         <span className="cel texto-2">{d.origem || <span className="sem-valor">—</span>}</span>
         <span className="cel texto-2 numero">{hora(d.capturadaEm)}</span>
@@ -53,8 +65,24 @@ export function Demandas({ demandas, hoje, acoes, onCapturar }: Props) {
         <span className="cel acoes-demanda">
           {estado === 'em_execucao' && <button type="button" className="btn pequeno" onClick={() => acoes.cronometro(d.id, 'pausar')}><Icone nome="pausa" tamanho={14} />Pausar</button>}
           {estado === 'pendente' && <button type="button" className="btn pequeno contorno" onClick={() => acoes.cronometro(d.id, 'iniciar')}><Icone nome="play" tamanho={14} />{d.tempoMs ? 'Retomar' : 'Iniciar'}</button>}
-          {estado !== 'concluida' && <button type="button" className="btn pequeno texto" onClick={() => acoes.cronometro(d.id, 'concluir')} aria-label={`Finalizar ${d.descricao}`}><Icone nome="check" tamanho={14} />Finalizar</button>}
+          {estado !== 'concluida' && <button type="button" className="btn pequeno texto" onClick={() => setRegistrando({ id: d.id, texto: d.registro, finalizar: true })} aria-label={`Finalizar ${d.descricao}`}><Icone nome="check" tamanho={14} />Finalizar</button>}
+          {estado === 'concluida' && registrando?.id !== d.id && (
+            <button type="button" className="btn pequeno texto" onClick={() => setRegistrando({ id: d.id, texto: d.registro, finalizar: false })} aria-label={`${d.registro ? 'Editar' : 'Adicionar'} registro de ${d.descricao}`}>
+              <Icone nome="lista" tamanho={14} />{d.registro ? 'Editar registro' : 'Adicionar registro'}
+            </button>
+          )}
         </span>
+        {registrando?.id === d.id && (
+          <form className="registro-form" onSubmit={gravarRegistro} onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) gravarRegistro(e); if (e.key === 'Escape') { e.stopPropagation(); setRegistrando(null); } }}>
+            <label htmlFor={`registro-${d.id}`}>O que foi feito? <span className="texto-2">(opcional)</span></label>
+            <textarea id={`registro-${d.id}`} rows={2} value={registrando.texto} onChange={(e) => setRegistrando({ ...registrando, texto: e.target.value })}
+              placeholder="Ex.: troquei a foto e avisei no grupo do cliente." autoFocus />
+            <span className="registro-botoes">
+              <button type="button" className="btn texto pequeno" onClick={() => setRegistrando(null)}>Cancelar</button>
+              <button type="submit" className="btn principal pequeno" disabled={gravando} title="Ctrl+Enter">{registrando.finalizar ? (gravando ? 'Finalizando…' : 'Finalizar') : (gravando ? 'Salvando…' : 'Salvar registro')}</button>
+            </span>
+          </form>
+        )}
       </li>
     );
   };

@@ -26,11 +26,14 @@ interface Props {
   onIniciar: () => Promise<void>;
   onConcluir: () => Promise<void>;
   onArquivar: () => Promise<void>;
+  onExcluir: () => Promise<void>;
 }
 
 /** Uma tarefa como linha da lista. As colunas seguem o cabeçalho em Quadro (.lista-cab). */
-export function Cartao({ tarefa: t, hoje, arquivarAposDias, onAbrir, onIniciar, onConcluir, onArquivar }: Props) {
+export function Cartao({ tarefa: t, hoje, arquivarAposDias, onAbrir, onIniciar, onConcluir, onArquivar, onExcluir }: Props) {
   const [ocupado, setOcupado] = useState(false);
+  // excluir pede um segundo clique; se o foco sair antes, volta ao normal (como no botão Desligar)
+  const [confirmarExclusao, setConfirmarExclusao] = useState(false);
   const linha = useRef<HTMLElement>(null);
   // Uma ação por vez: o botão trava até a resposta (clique duplo não move nem conclui duas vezes).
   // Com destino, a linha "viaja" até a aba, mas só depois que a ação deu certo (a linha saiu da lista):
@@ -49,28 +52,55 @@ export function Cartao({ tarefa: t, hoje, arquivarAposDias, onAbrir, onIniciar, 
   const vazio = <span className="sem-valor">—</span>;
   // A faixa à esquerda marca o que pede atenção: atraso vale mais que prioridade.
   const destaque = concluida ? 'cartao-feito' : situacaoPrazo(t, hoje)?.tipo === 'atrasada' ? 'cartao-atrasada' : `cartao-${t.prioridade}`;
+  const acoesCartao = (
+    <span className="cel cel-acoes">
+      {concluida && <button type="button" className="btn pequeno contorno cartao-acao" disabled={ocupado} onClick={agir(onArquivar, 'historico')} aria-label={`Arquivar ${t.titulo} agora`}><Icone nome="arquivo" tamanho={13} />Arquivar</button>}
+      {t.status === 'a_fazer' && <button type="button" className="btn pequeno contorno cartao-acao" disabled={ocupado} onClick={agir(onIniciar, 'fazendo')} aria-label={`Iniciar ${t.titulo}`}><Icone nome="play" tamanho={13} />Iniciar</button>}
+      {t.status === 'fazendo' && (
+        <button type="button" className="btn pequeno contorno cartao-acao" disabled={ocupado} aria-label={`Concluir ${t.titulo}`} onClick={agir(onConcluir, 'concluido')}>
+          <Icone nome="check" tamanho={13} />{ocupado ? 'Concluindo…' : 'Concluir'}
+        </button>
+      )}
+      <button type="button" className={`btn icone-so cartao-excluir ${confirmarExclusao ? 'confirmando' : ''}`} disabled={ocupado}
+        aria-label={confirmarExclusao ? `Confirmar: excluir ${t.titulo}` : `Excluir ${t.titulo}`} title={confirmarExclusao ? 'Clique de novo para excluir' : 'Excluir card'}
+        onBlur={() => setConfirmarExclusao(false)}
+        onClick={() => { if (!confirmarExclusao) { setConfirmarExclusao(true); return; } setConfirmarExclusao(false); agir(onExcluir)(); }}>
+        <Icone nome="lixeira" tamanho={14} />
+      </button>
+    </span>
+  );
+
+  // Card rápido: título, e só o que foi preenchido (descrição, prazo, prioridade, checklist).
+  // Mesmas colunas do Projeto (ver .lista-cartoes): Cliente e Tipo ficam vazios, sem traço.
+  if (t.modelo === 'rapido') {
+    const prazo = concluida ? <span className="data-prazo">{faltam === 1 ? 'Amanhã' : `Em ${faltam} dias`}</span> : <SeloPrazo tarefa={t} hoje={hoje} />;
+    return (
+      <article ref={linha} className={`cartao cartao-rapido ${destaque}`}>
+        <button type="button" className="cartao-abrir" onClick={onAbrir} aria-label={`Abrir ${t.titulo}`} />
+        <span className="cel"><span className="rapido-texto"><h3 title={t.titulo}>{t.titulo}</h3>{t.notas && <p className="rapido-descricao">{t.notas}</p>}</span></span>
+        <span className="cel cel-cliente" />
+        <span className="cel cel-tipo">{t.tipo ? <span className="chip">{t.tipo}</span> : null}</span>
+        <span className="cel">{t.prioridade !== 'normal' ? <Prioridade valor={t.prioridade} /> : null}</span>
+        <span className="cel">{t.prazo ? prazo : null}</span>
+        <span className="cel cel-itens">{t.checklist.length > 0 && <span><Icone nome="lista" tamanho={14} />{feitos}/{t.checklist.length}</span>}</span>
+        {acoesCartao}
+      </article>
+    );
+  }
 
   return (
     <article ref={linha} className={`cartao ${destaque}`}>
       <button type="button" className="cartao-abrir" onClick={onAbrir} aria-label={`Abrir ${t.titulo}`} />
       <span className="cel"><h3 title={t.titulo}>{t.titulo}</h3></span>
-      <span className="cel">{t.cliente ? <span className="texto-corte" title={t.cliente}>{t.cliente}</span> : vazio}</span>
-      <span className="cel">{t.tipo ? <span className="chip">{t.tipo}</span> : vazio}</span>
+      <span className="cel cel-cliente">{t.cliente ? <span className="texto-corte" title={t.cliente}>{t.cliente}</span> : vazio}</span>
+      <span className="cel cel-tipo">{t.tipo ? <span className="chip">{t.tipo}</span> : vazio}</span>
       <span className="cel"><Prioridade valor={t.prioridade} /></span>
       <span className="cel">{concluida ? <span className="data-prazo">{faltam === 1 ? 'Amanhã' : `Em ${faltam} dias`}</span> : (situacaoPrazo(t, hoje) ? <SeloPrazo tarefa={t} hoje={hoje} /> : vazio)}</span>
       <span className="cel cel-itens">
         {t.checklist.length > 0 && <span><Icone nome="lista" tamanho={14} />{feitos}/{t.checklist.length}</span>}
         {!t.checklist.length && vazio}
       </span>
-      <span className="cel cel-acoes">
-        {concluida && <button type="button" className="btn pequeno contorno cartao-acao" disabled={ocupado} onClick={agir(onArquivar, 'historico')} aria-label={`Arquivar ${t.titulo} agora`}><Icone nome="arquivo" tamanho={13} />Arquivar</button>}
-        {t.status === 'a_fazer' && <button type="button" className="btn pequeno contorno cartao-acao" disabled={ocupado} onClick={agir(onIniciar, 'fazendo')} aria-label={`Iniciar ${t.titulo}`}><Icone nome="play" tamanho={13} />Iniciar</button>}
-        {t.status === 'fazendo' && (
-          <button type="button" className="btn pequeno contorno cartao-acao" disabled={ocupado} aria-label={`Concluir ${t.titulo}`} onClick={agir(onConcluir, 'concluido')}>
-            <Icone nome="check" tamanho={13} />{ocupado ? 'Concluindo…' : 'Concluir'}
-          </button>
-        )}
-      </span>
+      {acoesCartao}
     </article>
   );
 }

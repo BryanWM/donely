@@ -161,13 +161,29 @@ describe('nova tarefa: prazo, anexos e cliente', () => {
     expect((await pedir('POST', '/tarefas', { titulo: 'x', prazo: amanha() })).status).toBe(201);
   });
 
+  it('registra o que foi feito ao finalizar e guarda sugestões ocultas', async () => {
+    const d = await (await pedir('POST', '/demandas', { descricao: 'Ajuste urgente', origem: 'Cliente X' })).json();
+    const fim = await pedir('POST', `/demandas/${d[0].id}/concluir`, { registro: '  troquei a foto  ' });
+    expect((await fim.json())[0]).toMatchObject({ concluidaEm: expect.any(String), registro: 'troquei a foto' });
+    const depois = await pedir('PATCH', `/demandas/${d[0].id}`, { registro: 'e avisei o cliente' });
+    expect((await depois.json())[0].registro).toBe('e avisei o cliente');
+    const cfg = await (await pedir('PATCH', '/config', { origensOcultas: ['Colega'] })).json();
+    expect(cfg.origensOcultas).toEqual(['Colega']);
+  });
+
+  it('anexa link também como referência', async () => {
+    const t = await (await pedir('POST', '/tarefas', { titulo: 'Post' })).json();
+    const ref = await (await pedir('POST', `/tarefas/${t.id}/anexos/link`, { url: 'https://pinterest.com/moodboard', papel: 'referencia' })).json();
+    expect(ref.anexos[0]).toMatchObject({ papel: 'referencia', url: 'https://pinterest.com/moodboard' });
+  });
+
   it('anexa imagem, serve com o tipo certo e remove', async () => {
     const t = await (await pedir('POST', '/tarefas', { titulo: 'Com anexo' })).json();
     const png = new Uint8Array([137, 80, 78, 71, 1, 2, 3]);
     const r = await api.request(`/tarefas/${t.id}/anexos`, { method: 'POST', headers: { host: 'localhost:3333', 'content-type': 'image/png', 'x-nome': encodeURIComponent('referência.png') }, body: png });
     expect(r.status).toBe(201);
     const comAnexo = await r.json();
-    expect(comAnexo.anexos).toEqual([{ id: expect.any(String), nome: 'referência.png', tipo: 'image/png', tamanho: 7, papel: 'material' }]);
+    expect(comAnexo.anexos).toEqual([{ id: expect.any(String), nome: 'referência.png', tipo: 'image/png', tamanho: 7, papel: 'material', url: null }]);
 
     const arquivo = await pedir('GET', `/anexos/${comAnexo.anexos[0].id}`);
     expect(arquivo.headers.get('content-type')).toBe('image/png');
@@ -255,5 +271,45 @@ describe('atalho na área de trabalho', () => {
     const r = await pedir('POST', '/atalho');
     expect(r.status).toBe(500);
     expect((await r.json()).erro).toBe('Sem powershell');
+  });
+});
+
+describe('versão', () => {
+  it('sem git responde que está em dia; com versão nova avisa; erro fica em silêncio; guarda por 1 hora', async () => {
+    expect(await (await pedir('GET', '/versao')).json()).toEqual({ desatualizada: false });
+
+    let consultas = 0;
+    api = criarApi(new Repositorio(abrirBanco(':memory:')), { versao: async () => { consultas++; return { desatualizada: true, pasta: '/home/ana/donely' }; } });
+    expect(await (await pedir('GET', '/versao')).json()).toEqual({ desatualizada: true, pasta: '/home/ana/donely' });
+    await pedir('GET', '/versao');
+    expect(consultas).toBe(1); // a segunda vem da memória
+
+    api = criarApi(new Repositorio(abrirBanco(':memory:')), { versao: async () => { throw new Error('sem internet'); } });
+    const r = await pedir('GET', '/versao');
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ desatualizada: false });
+  });
+});
+
+describe('card rápido e projeto', () => {
+  it('cria o rápido com título, descrição, prazo, prioridade, tipo e checklist; descarta cliente', async () => {
+    const r = await pedir('POST', '/tarefas', { modelo: 'rapido', titulo: 'Revisar pauta', notas: 'ver com a Ana', cliente: 'X', tipo: 'Post', checklist: ['Ler', 'Enviar'] });
+    expect(r.status).toBe(201);
+    const t = await r.json();
+    expect(t).toMatchObject({ modelo: 'rapido', titulo: 'Revisar pauta', notas: 'ver com a Ana', cliente: '', tipo: 'Post' });
+    expect(t.checklist.map((i: { texto: string }) => i.texto)).toEqual(['Ler', 'Enviar']);
+  });
+
+  it('projeto continua o padrão, e o checklist aceita editar, marcar e remover', async () => {
+    const p = await (await pedir('POST', '/tarefas', { titulo: 'Post' })).json();
+    expect(p.modelo).toBe('projeto');
+    const r = await (await pedir('POST', '/tarefas', { modelo: 'rapido', titulo: 'Ideia' })).json();
+    const item = await (await pedir('POST', `/tarefas/${r.id}/checklist`, { texto: 'Rascunho' })).json();
+    const id = item.checklist[0].id;
+    const editado = await (await pedir('PATCH', `/tarefas/${r.id}/checklist/${id}`, { texto: 'Rascunho final' })).json();
+    expect(editado.checklist[0]).toMatchObject({ texto: 'Rascunho final', feito: false });
+    const marcado = await (await pedir('PATCH', `/tarefas/${r.id}/checklist/${id}`, { feito: true })).json();
+    expect(marcado.checklist[0].feito).toBe(true);
+    expect((await pedir('PATCH', `/tarefas/${r.id}/checklist/${id}`, {})).status).toBe(400);
   });
 });

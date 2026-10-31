@@ -3,14 +3,19 @@ import logo from '../../../brand/donely-icone.svg';
 import { COLUNAS, diaLocal, estaArquivada, formatarDuracao, inicioDaSemana, NOME_STATUS, situacaoPrazo, tempoDemanda, type Demanda, type Status, type Tarefa } from '../shared/dominio';
 import type { Acoes } from './acoes';
 import { api, type Estado } from './api';
+import { Caderno, type SecaoCaderno } from './componentes/Caderno';
 import { Comemoracao } from './componentes/Comemoracao';
 import { pulsarContagem } from './voo';
 import { CapturaRapida } from './componentes/CapturaRapida';
 import { Configuracoes } from './componentes/Configuracoes';
 import { Historico } from './componentes/Historico';
+import { Modal } from './componentes/Modal';
 import { Demandas, useAgora } from './componentes/Demandas';
 import { Icone } from './componentes/Icone';
 import { ModalNova } from './componentes/ModalNova';
+import { ModalNovaRapida } from './componentes/ModalNovaRapida';
+import { ModalTarefaRapida } from './componentes/ModalTarefaRapida';
+import { EscolhaCard } from './componentes/EscolhaCard';
 import { ModalTarefa } from './componentes/ModalTarefa';
 import { Quadro } from './componentes/Quadro';
 
@@ -37,6 +42,28 @@ function Contagem({ n }: { n: number }) {
   return <span ref={ref} className="contagem">{n}</span>;
 }
 
+/** Passo a passo para atualizar: o código vem do GitHub; os dados (app/dados) ficam fora do git e não mudam. */
+function AtualizarVersao({ pasta, desligavel, onAviso }: { pasta: string; desligavel: boolean; onAviso: (texto: string) => void }) {
+  const comando = `cd "${pasta}" && git pull && cd app && npm install`;
+  const copiar = async () => {
+    try { await navigator.clipboard.writeText(comando); onAviso('Comando copiado. Cole no terminal do WSL.'); }
+    catch { onAviso('O navegador não deixou copiar. Selecione o comando e copie à mão.'); }
+  };
+  return (
+    <div className="atualizar-versao">
+      <p>O repositório do DONELY tem uma versão mais nova que a sua. Seus dados não mudam: ficam em <code>app/dados</code>, fora do git.</p>
+      <ol>
+        <li>{desligavel ? <>Desligue o DONELY (botão <strong>Desligar</strong>, no topo).</> : <>Pare o DONELY no terminal com <kbd>Ctrl</kbd>+<kbd>C</kbd>.</>}</li>
+        <li>No terminal do WSL, rode:
+          <span className="comando"><code>{comando}</code><button type="button" className="btn texto pequeno" onClick={copiar}>Copiar</button></span>
+        </li>
+        <li>Abra o DONELY de novo{desligavel ? ' pelo atalho' : ''}.</li>
+      </ol>
+    </div>
+  );
+}
+
+
 export function App() {
   const [estado, setEstado] = useState<Estado | null>(null);
   const [erroCarga, setErroCarga] = useState('');
@@ -50,8 +77,15 @@ export function App() {
     }
   }, [vista]);
   const [aberta, setAberta] = useState<string | null>(null);
-  const [janela, setJanela] = useState<'nova' | 'config' | 'captura' | null>(null);
+  const [janela, setJanela] = useState<'escolher' | 'nova' | 'rapida' | 'config' | 'captura' | 'versao' | 'caderno' | null>(null);
+  // última área do Caderno usada (Pessoas ou Ideias): vale enquanto o app estiver aberto
+  const [secaoCaderno, setSecaoCaderno] = useState<SecaoCaderno>('pessoas');
+  // pasta do projeto quando o repositório tem versão nova (mostra o botão de atualização no topo)
+  const [novaVersao, setNovaVersao] = useState<string | null>(null);
   const [aviso, setAviso] = useState<Aviso | null>(null);
+  // saindo: o aviso faz a saída animada antes de sair do DOM; pausado: o mouse está em cima dele
+  const [saindo, setSaindo] = useState(false);
+  const [pausado, setPausado] = useState(false);
   const [comemorando, setComemorando] = useState(false);
   const fimComemoracao = useCallback(() => setComemorando(false), []);
   // Desligar (só aberto pelo atalho): o primeiro clique arma, o segundo encerra o app inteiro
@@ -68,6 +102,21 @@ export function App() {
   }, []);
   useEffect(() => { carregar(); }, [carregar]);
 
+  // Versão nova no repositório: pergunta ao abrir e a cada 6 horas; avisa uma vez por sessão, e o botão do topo fica
+  useEffect(() => {
+    let avisou = false;
+    const conferir = async () => {
+      try {
+        const r = await api.versao();
+        setNovaVersao(r.desatualizada ? r.pasta ?? '' : null);
+        if (r.desatualizada && !avisou) { avisou = true; avisar('Há uma versão nova do DONELY.', { acao: { rotulo: 'Como atualizar', fn: () => setJanela('versao') } }); }
+      } catch { /* sem servidor: tenta na próxima */ }
+    };
+    conferir();
+    const i = setInterval(conferir, 6 * 3_600_000);
+    return () => clearInterval(i);
+  }, []);
+
   const tema = estado?.config.tema;
   useEffect(() => {
     if (!tema) return;
@@ -80,25 +129,35 @@ export function App() {
   }, [tema]);
 
   useEffect(() => {
-    // Aviso com ação (Desfazer) ou com erro fica até ser fechado.
-    if (!aviso || aviso.acao || aviso.erro) return;
-    const espera = setTimeout(() => setAviso(null), 3500);
+    // Some sozinho em todos os casos; com ação (Desfazer) ou erro, fica um pouco mais para dar tempo de ler e clicar.
+    if (!aviso || saindo || pausado) return;
+    const espera = setTimeout(() => setSaindo(true), aviso.acao ? 8000 : aviso.erro ? 6000 : 3500);
     return () => clearTimeout(espera);
-  }, [aviso]);
+  }, [aviso, saindo, pausado]);
+
+  useEffect(() => {
+    // a saída dura o tempo da animação (250 ms); não depende de animationend, que não dispara com movimento reduzido
+    if (!saindo) return;
+    const fim = setTimeout(() => { setAviso(null); setSaindo(false); setPausado(false); }, 250);
+    return () => clearTimeout(fim);
+  }, [saindo]);
 
   useEffect(() => {
     const tecla = (e: globalThis.KeyboardEvent) => {
       const alvo = e.target as HTMLElement;
-      if (e.key.toLowerCase() !== 'c' || e.ctrlKey || e.metaKey || e.altKey || janela || aberta) return;
+      // C = Captura rápida, N = Caderno; nunca enquanto se digita ou com outra janela aberta
+      const atalho = ({ c: 'captura', n: 'caderno' } as const)[e.key.toLowerCase() as 'c' | 'n'];
+      if (!atalho || e.ctrlKey || e.metaKey || e.altKey || janela || aberta) return;
       if (alvo.closest('input, textarea, select, [contenteditable]')) return;
       e.preventDefault();
-      setJanela('captura');
+      setJanela(atalho);
     };
     document.addEventListener('keydown', tecla);
     return () => document.removeEventListener('keydown', tecla);
   }, [janela, aberta]);
 
-  const avisar = (texto: string, extra: Partial<Aviso> = {}) => setAviso({ id: Date.now(), texto, ...extra });
+  const avisar = (texto: string, extra: Partial<Aviso> = {}) => { setSaindo(false); setAviso({ id: Date.now(), texto, ...extra }); };
+  const fecharAviso = () => setSaindo(true);
   // Mais uma concluída: comemora com a logo animada (quem pediu menos movimento fica só com o aviso).
   const comemorar = () => { if (!matchMedia('(prefers-reduced-motion: reduce)').matches) setComemorando(true); };
   const guardar = (t: Tarefa) => setEstado((e) => e && {
@@ -133,6 +192,7 @@ export function App() {
       },
       adicionarItem: async (id, texto) => { await comTarefa(() => api.adicionarItem(id, texto)); },
       marcarItem: async (id, item, feito) => { await comTarefa(() => api.marcarItem(id, item, feito)); },
+      editarItem: async (id, item, texto) => { await comTarefa(() => api.editarItem(id, item, texto)); },
       removerItem: async (id, item) => { await comTarefa(() => api.removerItem(id, item)); },
       criarCliente: async (nome) => {
         const c = await tentar(() => api.criarCliente(nome));
@@ -141,6 +201,7 @@ export function App() {
       },
       // Um arquivo por vez, para mostrar o erro do que falhar sem perder os outros.
       anexar: async (id, arquivos, papel) => { for (const f of arquivos) await comTarefa(() => api.anexar(id, f, papel)); },
+      anexarLink: async (id, url, papel) => Boolean(await comTarefa(() => api.anexarLink(id, url, papel))),
       removerAnexo: async (id, anexo) => { await comTarefa(() => api.removerAnexo(id, anexo)); },
       removerCliente: async (id) => {
         if (!(await tentar(async () => { await api.removerCliente(id); return true; }))) return;
@@ -159,6 +220,11 @@ export function App() {
       cronometro: async (id, acao) => {
         const demandas = await tentar(() => api.cronometro(id, acao));
         if (demandas) setEstado((e) => e && { ...e, demandas });
+      },
+      registroDemanda: async (id, registro, finalizar) => {
+        const demandas = await tentar(() => api.registroDemanda(id, registro, finalizar));
+        if (demandas) setEstado((e) => e && { ...e, demandas });
+        return Boolean(demandas);
       },
     };
     return a;
@@ -239,8 +305,16 @@ export function App() {
             </span>
           )}
           <button type="button" className="btn captura" onClick={() => setJanela('captura')} aria-keyshortcuts="C" title="Captura rápida (tecla C)">
-            <Icone nome="raio" />Captura rápida<kbd>C</kbd>
+            <Icone nome="raio" /><span className="rotulo-btn">Captura rápida</span><kbd>C</kbd>
           </button>
+          <button type="button" className="btn captura" onClick={() => setJanela('caderno')} aria-keyshortcuts="N" title="Caderno: pessoas e ideias (tecla N)">
+            <Icone nome="notas" /><span className="rotulo-btn">Caderno</span><kbd>N</kbd>
+          </button>
+          {novaVersao !== null && (
+            <button type="button" className="btn redondo atualizar" onClick={() => setJanela('versao')} aria-label="Há uma versão nova do DONELY: ver como atualizar" title="Versão nova disponível">
+              <Icone nome="sincronizar" tamanho={18} /><span className="ponto-novo" aria-hidden="true" />
+            </button>
+          )}
           <button type="button" className="btn redondo" onClick={() => setJanela('config')} aria-label="Configurações" title="Configurações"><Icone nome="ajustes" tamanho={18} /></button>
           {estado.desligavel && (
             <button type="button" className={`btn redondo desligar ${desligar === 'confirmar' ? 'confirmando' : ''}`} onBlur={() => setDesligar((d) => (d === 'confirmar' ? 'nao' : d))}
@@ -249,7 +323,7 @@ export function App() {
                 if (desligar !== 'confirmar') { setDesligar('confirmar'); return; }
                 try { await api.desligar(); setDesligar('feito'); } catch (e) { setDesligar('nao'); avisar(mensagem(e), { erro: true }); }
               }}>
-              <Icone nome="desligar" tamanho={18} />{desligar === 'confirmar' && <span>Desligar?</span>}
+              <Icone nome="desligar" tamanho={18} />
             </button>
           )}
         </div>
@@ -269,26 +343,38 @@ export function App() {
           {vista === 'demandas' ? <Demandas demandas={estado.demandas} hoje={hoje} acoes={acoes} onCapturar={() => setJanela('captura')} />
             : vista === 'historico'
             ? <Historico tarefas={estado.tarefas} demandas={estado.demandas} hoje={hoje} acoes={acoes} onAbrir={setAberta} onAviso={avisar} />
-            : <Quadro coluna={vista} tarefas={estado.tarefas} config={estado.config} hoje={hoje} acoes={acoes} onAbrir={setAberta} onConfig={() => setJanela('config')} onNova={() => setJanela('nova')} />}
+            : <Quadro coluna={vista} tarefas={estado.tarefas} config={estado.config} hoje={hoje} acoes={acoes} onAbrir={setAberta} onConfig={() => setJanela('config')} onNova={() => setJanela('escolher')} />}
         </section>
       </main>
 
-      {tarefaAberta && <ModalTarefa tarefa={tarefaAberta} config={estado.config} clientes={estado.clientes} hoje={hoje} acoes={acoes} onFechar={() => setAberta(null)} />}
+      {tarefaAberta && tarefaAberta.modelo === 'rapido' && <ModalTarefaRapida tarefa={tarefaAberta} config={estado.config} hoje={hoje} acoes={acoes} onFechar={() => setAberta(null)} />}
+      {tarefaAberta && tarefaAberta.modelo !== 'rapido' && <ModalTarefa tarefa={tarefaAberta} config={estado.config} clientes={estado.clientes} hoje={hoje} acoes={acoes} onFechar={() => setAberta(null)} />}
       {comemorando && <Comemoracao onFim={fimComemoracao} />}
+      {janela === 'escolher' && <EscolhaCard onEscolher={(modelo) => setJanela(modelo === 'rapido' ? 'rapida' : 'nova')} onFechar={() => setJanela(null)} />}
+      {janela === 'rapida' && <ModalNovaRapida hoje={hoje} config={estado.config} acoes={acoes} onFechar={() => setJanela(null)}
+        onCriada={() => { setJanela(null); setVista('a_fazer'); avisar('Card rápido criado em A fazer.'); }} />}
       {janela === 'nova' && <ModalNova hoje={hoje} config={estado.config} clientes={estado.clientes} acoes={acoes} onFechar={() => setJanela(null)}
         onCriada={() => { setJanela(null); setVista('a_fazer'); avisar('Tarefa criada em A fazer.'); }} />}
-      {janela === 'captura' && <CapturaRapida demandas={estado.demandas} acoes={acoes} onFechar={() => setJanela(null)}
+      {janela === 'captura' && <CapturaRapida demandas={estado.demandas} ocultas={estado.config.origensOcultas} acoes={acoes} onFechar={() => setJanela(null)}
         onCapturada={() => { setJanela(null); avisar('Demanda capturada em Não planejadas.'); }} />}
+      {janela === 'caderno' && <Caderno secao={secaoCaderno} onSecao={setSecaoCaderno} hoje={hoje} tarefas={estado.tarefas} clientes={estado.clientes} acoes={acoes}
+        onAbrirTarefa={setAberta} onAviso={avisar} onFechar={() => setJanela(null)} />}
+      {janela === 'versao' && (
+        <Modal titulo="Versão nova do DONELY" onFechar={() => setJanela(null)}>
+          <AtualizarVersao pasta={novaVersao ?? ''} desligavel={estado.desligavel} onAviso={avisar} />
+        </Modal>
+      )}
       {janela === 'config' && <Configuracoes config={estado.config} clientes={estado.clientes} acoes={acoes} atalho={estado.atalho} onFechar={() => setJanela(null)} />}
 
       {/* A região existe antes do texto, para o leitor de tela anunciar cada aviso. */}
       <div role="status">
         {aviso && (
-          <div key={aviso.id} className={`aviso ${aviso.erro ? 'aviso-erro' : ''}`}>
+          <div key={aviso.id} className={`aviso ${aviso.erro ? 'aviso-erro' : ''} ${saindo ? 'saindo' : ''}`}
+            onMouseEnter={() => setPausado(true)} onMouseLeave={() => setPausado(false)}>
             <Icone nome={aviso.erro ? 'alerta' : 'check'} />
             <span>{aviso.texto}</span>
-            {aviso.acao && <button type="button" onClick={() => { setAviso(null); aviso.acao!.fn(); }}>{aviso.acao.rotulo}</button>}
-            {(aviso.acao || aviso.erro) && <button type="button" className="aviso-fechar" onClick={() => setAviso(null)} aria-label="Fechar aviso"><Icone nome="x" tamanho={14} /></button>}
+            {aviso.acao && <button type="button" onClick={() => { fecharAviso(); aviso.acao!.fn(); }}>{aviso.acao.rotulo}</button>}
+            <button type="button" className="aviso-fechar" onClick={fecharAviso} aria-label="Fechar aviso"><Icone nome="x" tamanho={14} /></button>
           </div>
         )}
       </div>

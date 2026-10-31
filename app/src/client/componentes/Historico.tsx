@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
-  deslocarPeriodo, formatarDuracao, periodoDe, registrosDoPeriodo, rotuloDia, somarDias, textoRelatorio,
+  dataCurta, deslocarPeriodo, formatarDuracao, periodoDe, registrosDoPeriodo, rotuloDia, somarDias, tempoDemanda, textoRelatorio,
   type Demanda, type Periodo, type Tarefa, type TipoPeriodo,
 } from '../../shared/dominio';
 import type { Acoes } from '../acoes';
 import logo from '../../../../brand/donely-icone.svg';
 import { Icone } from './Icone';
+import { Modal } from './Modal';
 
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const TIPOS: [TipoPeriodo, string][] = [['semana', 'Semana'], ['mes', 'Mês'], ['periodo', 'Período']];
@@ -31,9 +32,19 @@ interface Props {
  * À esquerda, um painel fixo com período, números, filtro e ações; à direita, a lista por dia com a largura toda.
  */
 export function Historico({ tarefas, demandas, hoje, acoes, onAbrir, onAviso }: Props) {
+  const [demandaAberta, setDemandaAberta] = useState<Demanda | null>(null);
+  // clicar em qualquer ponto da linha abre a prévia: o card da tarefa (só leitura) ou o resumo da não planejada
+  const abrir = (tipo: 'tarefa' | 'demanda', id: string) => tipo === 'tarefa' ? onAbrir(id) : setDemandaAberta(demandas.find((d) => d.id === id) ?? null);
   const [tipo, setTipo] = useState<TipoPeriodo>('semana');
   const [periodo, setPeriodo] = useState<Periodo>(periodoDe('semana', hoje));
   const [mostrar, setMostrar] = useState<(typeof MOSTRAR)[number][0]>('tudo');
+  // O navegador usa o título da página como nome do PDF: durante a impressão ele vira o do relatório, com o período.
+  function imprimir() {
+    const antes = document.title;
+    document.title = `Relatório de atividades DONELY ${dataCurta(periodo.inicio).replaceAll('/', '-')} a ${dataCurta(periodo.fim).replaceAll('/', '-')}`;
+    window.addEventListener('afterprint', () => { document.title = antes; }, { once: true });
+    window.print();
+  }
   const [busca, setBusca] = useState('');
   const [confirmar, setConfirmar] = useState<string | null>(null);
 
@@ -141,7 +152,7 @@ export function Historico({ tarefas, demandas, hoje, acoes, onAbrir, onAviso }: 
             ))}
           </div>
           <button type="button" className="btn principal" onClick={copiar}><Icone nome="lista" />Copiar relatório</button>
-          <button type="button" className="btn" onClick={() => window.print()} aria-label="Imprimir ou salvar em PDF" title="Imprimir ou salvar em PDF"><Icone nome="arquivo" />PDF</button>
+          <button type="button" className="btn" onClick={imprimir} aria-label="Imprimir ou salvar em PDF" title="Imprimir ou salvar em PDF"><Icone nome="arquivo" />PDF</button>
         </div>
 
         {registros.length ? dias.map((dia) => {
@@ -151,18 +162,16 @@ export function Historico({ tarefas, demandas, hoje, acoes, onAbrir, onAviso }: 
               <h3>{rotuloDia(dia)}<span>{doDia.length} {doDia.length === 1 ? 'item' : 'itens'}</span></h3>
               <ul>
                 {doDia.map((r) => (
-                  <li key={r.tipo + r.id} className={`historico-item ${r.tipo}`}>
+                  <li key={r.tipo + r.id} className={`historico-item ${r.tipo}`} onClick={() => abrir(r.tipo, r.id)}>
                     <span className="historico-titulo">
                       <span className="historico-ponto" aria-hidden="true" />
-                      {r.tipo === 'tarefa'
-                        ? <button type="button" className="texto-corte" onClick={() => onAbrir(r.id)} title={r.titulo}>{r.titulo}</button>
-                        : <span className="texto-corte" title={r.titulo}>{r.titulo}</span>}
+                      <button type="button" className="texto-corte" onClick={(e) => { e.stopPropagation(); abrir(r.tipo, r.id); }} title={r.titulo}>{r.titulo}</button>
                     </span>
                     <span className="historico-meta texto-corte">
                       {r.quem || '—'} · {r.tipo === 'tarefa' ? r.categoria || 'Tarefa' : `Não planejada${r.tempoMs ? `, ${formatarDuracao(r.tempoMs)}` : ''}`}
                     </span>
                     <span className="historico-hora">{hora(r.concluidoEm)}</span>
-                    <span className="historico-acoes-linha so-tela">
+                    <span className="historico-acoes-linha so-tela" onClick={(e) => e.stopPropagation()}>
                       {r.tipo === 'tarefa' && (<>
                         <button type="button" className="btn icone-so" onClick={() => acoes.mover(r.id, 'a_fazer')} aria-label={`Voltar ${r.titulo} ao quadro`} title="Voltar ao quadro"><Icone nome="desfazer" tamanho={15} /></button>
                         <button type="button" className={`btn perigo pequeno ${confirmar === r.id ? 'confirmando' : 'icone-so'}`} onClick={() => excluir(r.id)}
@@ -220,6 +229,29 @@ export function Historico({ tarefas, demandas, hoje, acoes, onAbrir, onAviso }: 
         </table>
       )) : <p className="relatorio-vazio">Nada concluído neste período.</p>}
     </section>
+    {demandaAberta && <PreviaDemanda demanda={demandaAberta} onFechar={() => setDemandaAberta(null)} />}
     </>
+  );
+}
+
+const quando = (iso: string) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+/** Como a não planejada ficou ao ser finalizada: o pedido, quem pediu, o tempo gasto e o registro do que foi feito. */
+function PreviaDemanda({ demanda: d, onFechar }: { demanda: Demanda; onFechar: () => void }) {
+  const ms = tempoDemanda(d, Date.now());
+  return (
+    <Modal titulo="Não planejada" onFechar={onFechar} direita={<button type="button" className="btn texto forte" onClick={onFechar}>OK</button>}>
+      <div className="previa-demanda">
+        <h3>{d.descricao}{d.prioridade === 'urgente' && <span className="selo selo-erro">Urgente</span>}</h3>
+        <ul className="lista-ios">
+          <li className="linha-ios"><span className="rotulo">Quem pediu</span><span className="valor">{d.origem || '—'}</span></li>
+          <li className="linha-ios"><span className="rotulo">Capturada</span><span className="valor">{quando(d.capturadaEm)}</span></li>
+          {d.concluidaEm && <li className="linha-ios"><span className="rotulo">Finalizada</span><span className="valor">{quando(d.concluidaEm)}</span></li>}
+          <li className="linha-ios"><span className="rotulo">Tempo em execução</span><span className="valor">{ms ? formatarDuracao(ms) : '—'}</span></li>
+        </ul>
+        <p className="grupo-titulo">O que foi feito</p>
+        <div className="lista-ios previa-registro">{d.registro.trim() ? d.registro : <span className="sem-valor">Finalizada sem registro.</span>}</div>
+      </div>
+    </Modal>
   );
 }

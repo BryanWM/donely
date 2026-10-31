@@ -122,8 +122,8 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
               <div className="passo-corpo">
                 <h3 className="passo-titulo">Referências <span className="contagem">{referencias.length || ''}</span></h3>
                 <MaterialProduzido somenteLeitura={leitura} acao="Adicionar referências" dica="Imagens, PDFs ou documentos que orientam o trabalho. Arraste, cole (Ctrl+V) ou clique." vazio="Nenhuma referência."
-                  itens={referencias.map((a) => ({ chave: a.id, nome: a.nome, tipo: a.tipo, url: `/api/anexos/${a.id}` }))}
-                  onAdicionar={(arquivos) => acoes.anexar(t.id, arquivos, 'referencia')} onRemover={(anexo) => acoes.removerAnexo(t.id, anexo)} />
+                  itens={referencias.map((a) => ({ chave: a.id, nome: a.nome, tipo: a.tipo, url: a.url ?? `/api/anexos/${a.id}`, link: Boolean(a.url) }))}
+                  onAdicionar={(arquivos) => acoes.anexar(t.id, arquivos, 'referencia')} onAdicionarLink={(url) => acoes.anexarLink(t.id, url, 'referencia')} onRemover={(anexo) => acoes.removerAnexo(t.id, anexo)} />
               </div>
             </li>
 
@@ -155,8 +155,8 @@ export function ModalTarefa({ tarefa: t, config, clientes, hoje, acoes, onFechar
               <span className="passo-num" aria-hidden="true">4</span>
               <div className="passo-corpo">
                 <h3 className="passo-titulo">Material produzido <span className="contagem">{materiais.length || ''}</span></h3>
-                <MaterialProduzido somenteLeitura={leitura} itens={materiais.map((a) => ({ chave: a.id, nome: a.nome, tipo: a.tipo, url: `/api/anexos/${a.id}` }))}
-                  onAdicionar={(arquivos) => acoes.anexar(t.id, arquivos)} onRemover={(anexo) => acoes.removerAnexo(t.id, anexo)} />
+                <MaterialProduzido somenteLeitura={leitura} itens={materiais.map((a) => ({ chave: a.id, nome: a.nome, tipo: a.tipo, url: a.url ?? `/api/anexos/${a.id}`, link: Boolean(a.url) }))}
+                  onAdicionar={(arquivos) => acoes.anexar(t.id, arquivos)} onAdicionarLink={(url) => acoes.anexarLink(t.id, url)} onRemover={(anexo) => acoes.removerAnexo(t.id, anexo)} />
               </div>
             </li>
           </ol>

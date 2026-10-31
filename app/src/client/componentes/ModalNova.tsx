@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { NOME_PRIORIDADE, PRIORIDADES, somarDias, type Cliente, type Config, type Prioridade } from '../../shared/dominio';
+import { NOME_PRIORIDADE, PRIORIDADES, somarDiasUteis, type Cliente, type Config, type Prioridade } from '../../shared/dominio';
 import type { Acoes } from '../acoes';
 import { Icone } from './Icone';
 import { Modal } from './Modal';
@@ -12,7 +12,7 @@ const lista = new Intl.ListFormat('pt-BR', { type: 'conjunction' });
 const abrir = (id: string) => () => { try { (document.getElementById(id) as HTMLInputElement | null)?.showPicker?.(); } catch { /* navegador sem showPicker: fica só o foco */ } };
 
 export function ModalNova({ hoje, config, clientes, acoes, onFechar, onCriada }: Props) {
-  const [f, setF] = useState({ titulo: '', cliente: '', novoCliente: '', tipo: '', prioridade: 'normal' as Prioridade, prazo: somarDias(hoje, 3), briefing: '', checklist: '' });
+  const [f, setF] = useState({ titulo: '', cliente: '', novoCliente: '', tipo: '', prioridade: 'normal' as Prioridade, prazo: somarDiasUteis(hoje, 3), briefing: '', checklist: '' });
   const [tentou, setTentou] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const mudar = (campo: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [campo]: e.target.value }));

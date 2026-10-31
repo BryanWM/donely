@@ -1,12 +1,14 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
-import { diaLocal, LIMITE_ANEXO, OPCOES_ARQUIVAR, PRIORIDADES, PRIORIDADES_DEMANDA, STATUS, TIPOS_PREVIA } from '../shared/dominio';
+import { diaLocal, LIMITE_ANEXO, MODELOS, OPCOES_ARQUIVAR, PRIORIDADES, PRIORIDADES_DEMANDA, STATUS, TIPOS_PREVIA } from '../shared/dominio';
 import type { Repositorio } from './repositorio';
 
 const dia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use a data no formato AAAA-MM-DD');
 const texto = (max: number) => z.string().trim().max(max);
+const url = z.string().trim().url('Endereço inválido').refine((u) => /^https?:\/\//i.test(u), 'Use um endereço que comece com http:// ou https://');
 
 const novaTarefa = z.object({
+  modelo: z.enum(MODELOS).optional(),
   titulo: texto(300).min(1, 'Dê um título para a tarefa'),
   notas: texto(20_000).optional(),
   cliente: texto(120).optional(),
@@ -38,8 +40,9 @@ const LOCAL = new Set(['127.0.0.1', 'localhost', '[::1]']);
  * `sistema` traz o que depende de onde o app roda: `desligar` só quando aberto pelo atalho (scripts/iniciar.sh),
  * `criarAtalho` só no WSL (cria o ícone na área de trabalho do Windows e devolve onde ficou).
  */
-export interface Sistema { desligar?: () => void; criarAtalho?: () => Promise<string> }
-export function criarApi(repo: Repositorio, { desligar, criarAtalho }: Sistema = {}) {
+export interface Versao { desatualizada: boolean; pasta?: string }
+export interface Sistema { desligar?: () => void; criarAtalho?: () => Promise<string>; versao?: () => Promise<Versao> }
+export function criarApi(repo: Repositorio, { desligar, criarAtalho, versao }: Sistema = {}) {
   const api = new Hono();
 
   // O servidor não tem login: só aceita pedidos desta máquina e da própria interface.
@@ -58,6 +61,16 @@ export function criarApi(repo: Repositorio, { desligar, criarAtalho }: Sistema =
     await next();
   });
 
+  // Há versão nova no repositório? Sem internet, sem git ou sem acesso: responde que não, em silêncio.
+  // shortcut: guarda a resposta por 1 hora no processo; o app pergunta ao abrir e a cada 6 horas.
+  let ultimaVersao: { em: number; valor: Versao } | null = null;
+  api.get('/versao', async (c) => {
+    if (!versao) return c.json({ desatualizada: false });
+    if (!ultimaVersao || Date.now() - ultimaVersao.em > 3_600_000) {
+      try { ultimaVersao = { em: Date.now(), valor: await versao() }; } catch { return c.json({ desatualizada: false }); }
+    }
+    return c.json(ultimaVersao.valor);
+  });
   api.get('/estado', (c) => c.json({ tarefas: repo.listarTarefas(), demandas: repo.listarDemandas(), config: repo.obterConfig(), clientes: repo.listarClientes(), desligavel: Boolean(desligar), atalho: Boolean(criarAtalho) }));
   // Responde antes de desligar, para a interface saber que deu certo.
   api.post('/desligar', (c) => {
@@ -77,11 +90,23 @@ export function criarApi(repo: Repositorio, { desligar, criarAtalho }: Sistema =
     repo.capturarDemanda(d);
     return c.json(repo.listarDemandas(), 201);
   });
-  for (const [acao, fn] of [['iniciar', repo.iniciarDemanda], ['pausar', repo.pausarDemanda], ['concluir', repo.concluirDemanda]] as const) {
+  for (const [acao, fn] of [['iniciar', repo.iniciarDemanda], ['pausar', repo.pausarDemanda]] as const) {
     api.post(`/demandas/:id/${acao}`, (c) => (fn.call(repo, c.req.param('id'))
       ? c.json(repo.listarDemandas())
       : c.json({ erro: 'Demanda não encontrada ou já concluída' }, 404)));
   }
+  // Finalizar aceita, opcionalmente, o registro do que foi feito; depois ele pode ser escrito ou corrigido.
+  const registro = z.object({ registro: z.string().max(20_000).transform((s) => s.trim()) });
+  api.post('/demandas/:id/concluir', async (c) => {
+    const d = await corpo(c, registro.partial().optional()); if (d instanceof Response) return d;
+    return repo.concluirDemanda(c.req.param('id'), d?.registro ?? '')
+      ? c.json(repo.listarDemandas())
+      : c.json({ erro: 'Demanda não encontrada ou já concluída' }, 404);
+  });
+  api.patch('/demandas/:id', async (c) => {
+    const d = await corpo(c, registro); if (d instanceof Response) return d;
+    return repo.registrarDemanda(c.req.param('id'), d.registro) ? c.json(repo.listarDemandas()) : c.json({ erro: 'Demanda não encontrada' }, 404);
+  });
 
   api.post('/tarefas', async (c) => {
     const d = await corpo(c, novaTarefa); if (d instanceof Response) return d;
@@ -102,9 +127,16 @@ export function criarApi(repo: Repositorio, { desligar, criarAtalho }: Sistema =
     const t = repo.adicionarAnexo(c.req.param('id'), nome, tipo, dados, c.req.query('papel') === 'referencia' ? 'referencia' : 'material');
     return t ? c.json(t, 201) : naoEncontrada(c);
   });
+  // Link no lugar de um arquivo: o nome é opcional (sem ele, fica o endereço do site).
+  api.post('/tarefas/:id/anexos/link', async (c) => {
+    const d = await corpo(c, z.object({ url, nome: texto(200).optional(), papel: z.enum(['material', 'referencia']).optional() })); if (d instanceof Response) return d;
+    const t = repo.adicionarAnexo(c.req.param('id'), d.nome || new URL(d.url).hostname.replace(/^www\./, ''), 'text/uri-list', new Uint8Array(), d.papel ?? 'material', d.url);
+    return t ? c.json(t, 201) : naoEncontrada(c);
+  });
   api.get('/anexos/:id', (c) => {
     const a = repo.obterAnexo(c.req.param('id'));
     if (!a) return c.json({ erro: 'Anexo não encontrado' }, 404);
+    if (a.url) return c.redirect(a.url); // link: não há bytes, leva ao endereço (sempre http/https, validado ao anexar)
     // Só imagem, PDF e vídeo abrem no navegador; o resto (HTML, SVG, ZIP…) vai como download, nunca executa aqui.
     const previa = TIPOS_PREVIA.includes(a.tipo);
     return c.body(a.dados as Uint8Array<ArrayBuffer>, 200, {
@@ -139,8 +171,13 @@ export function criarApi(repo: Repositorio, { desligar, criarAtalho }: Sistema =
     return t ? c.json(t, 201) : naoEncontrada(c);
   });
   api.patch('/tarefas/:id/checklist/:item', async (c) => {
-    const d = await corpo(c, z.object({ feito: z.boolean() })); if (d instanceof Response) return d;
-    const t = repo.marcarItem(c.req.param('id'), c.req.param('item'), d.feito);
+    const d = await corpo(c, z.object({
+      feito: z.boolean().optional(),
+      texto: texto(500).min(1, 'Escreva o item').optional(),
+    }).refine((x) => x.feito !== undefined || x.texto !== undefined, 'Nada para mudar no item')); if (d instanceof Response) return d;
+    const t = d.texto !== undefined
+      ? repo.editarItem(c.req.param('id'), c.req.param('item'), d.texto)
+      : repo.marcarItem(c.req.param('id'), c.req.param('item'), d.feito!);
     return t ? c.json(t) : naoEncontrada(c);
   });
   api.delete('/tarefas/:id/checklist/:item', (c) => {
@@ -161,10 +198,48 @@ export function criarApi(repo: Repositorio, { desligar, criarAtalho }: Sistema =
       arquivarAposDias: z.number().int().refine((n) => (OPCOES_ARQUIVAR as readonly number[]).includes(n), 'Escolha 1, 3, 7 ou 14 dias').optional(),
       tipos: z.array(texto(60).min(1)).max(50).optional(),
       tema: z.enum(['claro', 'escuro', 'auto']).optional(),
+      origensOcultas: z.array(texto(120).min(1)).max(200).optional(),
     }));
     if (d instanceof Response) return d;
     return c.json(repo.salvarConfig(d));
   });
+
+  // Rascunhos de ideias: nada é obrigatório, o salvamento é automático (a interface manda as mudanças enquanto se escreve).
+  const camposRascunho = z.object({
+    titulo: texto(200).optional(), conteudo: z.string().max(200_000).optional(),
+    vinculo: z.object({ tipo: z.enum(['cliente', 'tarefa']), id: z.string().min(1).max(100) }).nullable().optional(),
+  });
+  api.get('/rascunhos', (c) => c.json(repo.listarRascunhos()));
+  api.post('/rascunhos', async (c) => {
+    const d = await corpo(c, camposRascunho); if (d instanceof Response) return d;
+    return c.json(repo.criarRascunho(d.titulo ?? '', d.conteudo ?? ''), 201);
+  });
+  api.patch('/rascunhos/:id', async (c) => {
+    const d = await corpo(c, camposRascunho); if (d instanceof Response) return d;
+    const r = repo.atualizarRascunho(c.req.param('id'), d);
+    return r ? c.json(r) : c.json({ erro: 'Rascunho não encontrado' }, 404);
+  });
+  api.delete('/rascunhos/:id', (c) => (repo.excluirRascunho(c.req.param('id')) ? c.body(null, 204) : c.json({ erro: 'Rascunho não encontrado' }, 404)));
+
+  // Bloco de notas por pessoa (atalho N). Anotação sem conteúdo não é criada nem salva.
+  const anotacao = z.object({ titulo: texto(200).optional(), conteudo: texto(50_000).min(1, 'Escreva alguma coisa antes de salvar') });
+  api.get('/notas', (c) => c.json(repo.listarNotas()));
+  api.post('/pessoas', async (c) => {
+    const d = await corpo(c, z.object({ nome: texto(120).min(1, 'Dê um nome à pessoa') })); if (d instanceof Response) return d;
+    const p = repo.criarPessoa(d.nome);
+    return p ? c.json(p, 201) : c.json({ erro: 'Já existe uma pessoa com esse nome' }, 409);
+  });
+  api.post('/pessoas/:id/anotacoes', async (c) => {
+    const d = await corpo(c, anotacao); if (d instanceof Response) return d;
+    const a = repo.criarAnotacao(c.req.param('id'), d.titulo ?? '', d.conteudo);
+    return a ? c.json(a, 201) : c.json({ erro: 'Pessoa não encontrada' }, 404);
+  });
+  api.patch('/anotacoes/:id', async (c) => {
+    const d = await corpo(c, anotacao); if (d instanceof Response) return d;
+    const a = repo.atualizarAnotacao(c.req.param('id'), d.titulo ?? '', d.conteudo);
+    return a ? c.json(a) : c.json({ erro: 'Anotação não encontrada' }, 404);
+  });
+  api.delete('/anotacoes/:id', (c) => (repo.excluirAnotacao(c.req.param('id')) ? c.body(null, 204) : c.json({ erro: 'Anotação não encontrada' }, 404)));
 
   return api;
 }

@@ -13,6 +13,8 @@ export const NOME_STATUS: Record<Status, string> = Object.fromEntries(COLUNAS.ma
 export const PRIORIDADES = ['urgente', 'alta', 'normal'] as const;
 export type Prioridade = (typeof PRIORIDADES)[number];
 export const NOME_PRIORIDADE: Record<Prioridade, string> = { urgente: 'Urgente', alta: 'Alta', normal: 'Normal' };
+/** No Rápido, normal quer dizer sem prioridade: o card não mostra nada. */
+export const NOME_PRIORIDADE_RAPIDA: Record<Prioridade, string> = { normal: 'Sem prioridade', alta: 'Alta', urgente: 'Urgente' };
 const ORDEM_PRIORIDADE: Record<Prioridade, number> = { urgente: 0, alta: 1, normal: 2 };
 
 export const TIPOS_PADRAO = ['Post', 'Carrossel', 'Vídeo', 'Arte', 'Documento', 'Roteiro', 'Reunião', 'Outro'];
@@ -22,14 +24,19 @@ export interface ItemChecklist { id: string; texto: string; feito: boolean }
 export interface Evento { em: string; texto: string }
 /** Arquivo do briefing. Os bytes ficam no servidor, em /api/anexos/:id. */
 export type PapelAnexo = 'material' | 'referencia';
-export interface Anexo { id: string; nome: string; tipo: string; tamanho: number; papel: PapelAnexo }
+export interface Anexo { id: string; nome: string; tipo: string; tamanho: number; papel: PapelAnexo; /** Link anexado no lugar de um arquivo; nulo = arquivo. */ url: string | null }
 /** Material produzido aceita qualquer arquivo; só estes tipos abrem no navegador, o resto é baixado. */
 export const TIPOS_PREVIA = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf', 'video/mp4', 'video/webm', 'video/quicktime'];
 // shortcut: o arquivo vai inteiro para a memória e para o SQLite; acima disso, gravar em disco e servir em stream.
 export const LIMITE_ANEXO = 100 * 1024 * 1024;
 
+/** Projeto: formulário completo (cliente, tipo, briefing, anexos). Rápido: só título, descrição, prazo, prioridade e checklist. */
+export const MODELOS = ['projeto', 'rapido'] as const;
+export type Modelo = (typeof MODELOS)[number];
+
 export interface Tarefa {
   id: string;
+  modelo: Modelo;
   titulo: string;
   notas: string;
   cliente: string;
@@ -67,6 +74,8 @@ export interface Demanda {
   /** Tempo de execução já fechado, sem contar o trecho em andamento. */
   tempoMs: number;
   concluidaEm: string | null;
+  /** O que foi feito: escrito ao finalizar ou depois; vazio quando não há. */
+  registro: string;
 }
 
 export type EstadoDemanda = 'pendente' | 'em_execucao' | 'concluida';
@@ -85,11 +94,19 @@ export function formatarDuracao(ms: number, comSegundos = false): string {
   return h ? `${h} h ${pad(m)} min` : `${m} min`;
 }
 
+/** Bloco de notas: alguém com quem se conversa, e o que ficou registrado de cada conversa. */
+export interface Pessoa { id: string; nome: string }
+/** Rascunho de ideia: pensar primeiro, organizar depois. O vínculo (cliente ou tarefa) é opcional e pode vir depois. */
+export interface Rascunho { id: string; titulo: string; conteudo: string; vinculo: { tipo: 'cliente' | 'tarefa'; id: string } | null; criadoEm: string; atualizadoEm: string }
+export interface Anotacao { id: string; pessoaId: string; titulo: string; conteudo: string; criadoEm: string; /** Igual a criadoEm até a primeira edição. */ atualizadoEm: string }
+
 export type Tema = 'claro' | 'escuro' | 'auto';
 export interface Config {
   arquivarAposDias: number; tipos: string[]; tema: Tema;
+  /** Sugestões de "Quem pediu" que a pessoa tirou da Captura rápida. As demandas já registradas não mudam. */
+  origensOcultas: string[];
 }
-export const CONFIG_PADRAO: Config = { arquivarAposDias: 3, tipos: TIPOS_PADRAO, tema: 'claro' };
+export const CONFIG_PADRAO: Config = { arquivarAposDias: 3, tipos: TIPOS_PADRAO, tema: 'claro', origensOcultas: [] };
 
 
 // ---------- datas (sempre no fuso da máquina) ----------
@@ -100,6 +117,12 @@ const paraData = (dia: string) => { const [a, m, d] = dia.split('-').map(Number)
 /** Dias de calendário de `b` até `a` (positivo se `a` vem depois). */
 export const diasEntre = (a: string, b: string) => Math.round((paraData(a).getTime() - paraData(b).getTime()) / 86_400_000);
 export const somarDias = (dia: string, n: number) => { const d = paraData(dia); d.setDate(d.getDate() + n); return diaLocal(d); };
+/** Avança n dias úteis (segunda a sexta), pulando sábado e domingo. Feriados não entram. */
+export const somarDiasUteis = (dia: string, n: number) => {
+  const d = paraData(dia);
+  while (n > 0) { d.setDate(d.getDate() + 1); if (d.getDay() % 6 !== 0) n--; }
+  return diaLocal(d);
+};
 export const inicioDaSemana = (dia: string) => { const d = paraData(dia); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return diaLocal(d); };
 
 // ---------- regras ----------

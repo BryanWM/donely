@@ -7,6 +7,8 @@ interface Props {
   /** Ação à direita. Sem ela, mostra "Fechar". */
   direita?: ReactNode;
   grande?: boolean;
+  /** Ocupa toda a área útil da tela (bloco de notas). */
+  cheio?: boolean;
   largo?: boolean;
   /** Ações no rodapé. Com rodapé, o cabeçalho mostra só o título. */
   rodape?: ReactNode;
@@ -15,7 +17,7 @@ interface Props {
 }
 
 /** Janela no padrão de sheet do iOS: fecha no Esc, em Fechar ou clicando fora. */
-export function Modal({ titulo, esquerda, direita, grande, largo, rodape, onFechar, children }: Props) {
+export function Modal({ titulo, esquerda, direita, grande, cheio, largo, rodape, onFechar, children }: Props) {
   const caixa = useRef<HTMLDivElement>(null);
   // Guardado numa ref: o pai recria onFechar a cada render, e o efeito abaixo deve rodar só ao abrir.
   // (Rodando de novo, ele devolvia o foco ao primeiro campo e a página rolava para o topo.)
@@ -37,7 +39,7 @@ export function Modal({ titulo, esquerda, direita, grande, largo, rodape, onFech
   return (
     <>
       <div className="fundo-modal" onClick={onFechar} />
-      <div ref={caixa} className={`modal ${grande ? 'modal-grande' : ''} ${largo ? 'modal-largo' : ''}`} role="dialog" aria-modal="true" aria-label={titulo}>
+      <div ref={caixa} className={`modal ${grande ? 'modal-grande' : ''} ${cheio ? 'modal-cheio' : ''} ${largo ? 'modal-largo' : ''}`} role="dialog" aria-modal="true" aria-label={titulo}>
         <header className="modal-cab">
           <span>{esquerda}</span>
           <h2>{titulo}</h2>

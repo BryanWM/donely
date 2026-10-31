@@ -30,7 +30,19 @@ const criarAtalho = process.env.WSL_DISTRO_NAME ? () => new Promise<string>((ok,
     else ok(ultima(saida).replace(/^Atalho criado: /, ''));
   });
 }) : undefined;
-app.route('/api', criarApi(repo, { desligar, criarAtalho }));
+// Versão: o commit instalado contra o da branch padrão no GitHub. ls-remote só consulta (não baixa nem muda nada);
+// usa as credenciais do git da pessoa, então funciona com repositório privado para quem tem acesso.
+const git = (...args: string[]) => new Promise<string>((ok, falha) => {
+  execFile('git', args, { cwd: RAIZ_APP, timeout: 15_000, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } }, (erro, saida) => (erro ? falha(erro) : ok(saida.trim())));
+});
+const versao = async () => {
+  const [local, remota] = [await git('rev-parse', 'HEAD'), (await git('ls-remote', 'origin', 'HEAD')).split(/\s/)[0]];
+  if (!remota || remota === local) return { desatualizada: false };
+  // a do GitHub já está dentro da instalada (quem está à frente é você): não é atualização
+  const dentro = await git('merge-base', '--is-ancestor', remota, local).then(() => true, () => false);
+  return { desatualizada: !dentro, pasta: resolve(RAIZ_APP, '..') };
+};
+app.route('/api', criarApi(repo, { desligar, criarAtalho, versao }));
 
 // Em produção (npm start) o próprio servidor entrega a interface já compilada.
 if (existsSync(INTERFACE)) {

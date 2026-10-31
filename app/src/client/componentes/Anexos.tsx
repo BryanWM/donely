@@ -1,11 +1,13 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { LIMITE_ANEXO } from '../../shared/dominio';
 import { Icone } from './Icone';
 
-export interface ItemAnexo { chave: string; nome: string; tipo: string; url: string }
+export interface ItemAnexo { chave: string; nome: string; tipo: string; url: string; /** Link externo no lugar de um arquivo. */ link?: boolean }
 
 interface Props {
   itens: ItemAnexo[]; onAdicionar: (arquivos: File[]) => Promise<void> | void; onRemover: (chave: string) => void; somenteLeitura?: boolean;
+  /** Com ela, a pessoa escolhe entre anexar arquivo ou link. Devolve se deu certo. */
+  onAdicionarLink?: (url: string) => Promise<boolean>;
   /** Textos da área de soltar e do estado vazio; o padrão é o do material produzido. */
   acao?: string; dica?: string; vazio?: string;
 }
@@ -13,11 +15,20 @@ interface Props {
 const extensao = (nome: string) => (nome.includes('.') ? nome.split('.').pop()!.slice(0, 4).toUpperCase() : 'ARQ');
 
 /** Material produzido: arrastar, colar ou escolher arquivos de qualquer tipo (vídeo, foto, PDF…). */
-export function MaterialProduzido({ itens, onAdicionar, onRemover, somenteLeitura, acao = 'Adicionar o que você produziu', dica = 'Vídeo, foto, PDF ou qualquer arquivo, até 100 MB. Arraste para cá, cole (Ctrl+V) ou clique.', vazio = 'Nenhum material ainda.' }: Props) {
+export function MaterialProduzido({ itens, onAdicionar, onAdicionarLink, onRemover, somenteLeitura, acao = 'Adicionar o que você produziu', dica = 'Vídeo, foto, PDF ou qualquer arquivo, até 100 MB. Arraste para cá, cole (Ctrl+V) ou clique.', vazio = 'Nenhum material ainda.' }: Props) {
   const entrada = useRef<HTMLInputElement>(null);
   const [recusa, setRecusa] = useState('');
   const [sobre, setSobre] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [modo, setModo] = useState<'arquivo' | 'link'>('arquivo');
+  const [link, setLink] = useState('');
+
+  async function anexarLink(e: FormEvent) {
+    e.preventDefault();
+    if (!onAdicionarLink || !/^https?:\/\/\S+$/i.test(link.trim())) { setRecusa('Cole um endereço completo, começando com http:// ou https://.'); return; }
+    setRecusa(''); setEnviando(true);
+    try { if (await onAdicionarLink(link.trim())) setLink(''); } finally { setEnviando(false); }
+  }
 
   async function receber(lista: FileList | File[]) {
     if (somenteLeitura) return; // em "A fazer" nada é anexado, nem colando ou arrastando
@@ -38,8 +49,9 @@ export function MaterialProduzido({ itens, onAdicionar, onRemover, somenteLeitur
         <ul className="anexos-lista">
           {itens.map((a) => (
             <li key={a.chave} className="anexo">
-              <a href={a.url} target="_blank" rel="noopener noreferrer" title={a.nome}>
-                {a.tipo.startsWith('image/') ? <img src={a.url} alt="" />
+              <a href={a.url} target="_blank" rel="noopener noreferrer" title={a.link ? `${a.nome} · ${a.url}` : a.nome}>
+                {a.link ? <span className="anexo-icone anexo-link"><Icone nome="link" tamanho={22} /></span>
+                  : a.tipo.startsWith('image/') ? <img src={a.url} alt="" />
                   : <span className={`anexo-icone ${a.tipo.startsWith('video/') ? 'anexo-video' : ''}`}>{a.tipo.startsWith('video/') ? <Icone nome="play" tamanho={22} /> : extensao(a.nome)}</span>}
                 <span className="anexo-nome">{a.nome}</span>
               </a>
@@ -49,12 +61,29 @@ export function MaterialProduzido({ itens, onAdicionar, onRemover, somenteLeitur
         </ul>
       )}
       {somenteLeitura ? !itens.length && <p className="galeria-vazia">{vazio}</p> : <>
+      {onAdicionarLink && (
+        <div className="segmentado material-modo" role="radiogroup" aria-label="Anexar">
+          {(['arquivo', 'link'] as const).map((m) => (
+            <button key={m} type="button" role="radio" aria-checked={modo === m} className={modo === m ? 'ativo' : ''} onClick={() => { setModo(m); setRecusa(''); }}>
+              <Icone nome={m === 'arquivo' ? 'clipe' : 'link'} tamanho={14} />{m === 'arquivo' ? 'Arquivo' : 'Link'}
+            </button>
+          ))}
+        </div>
+      )}
+      {modo === 'link' && onAdicionarLink ? (
+        <form className="material-link" onSubmit={anexarLink} noValidate>
+          <label className="sr" htmlFor="material-url">Link do material</label>
+          <input id="material-url" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="Cole o link: Drive, YouTube, Figma, WeTransfer…" autoComplete="off" />
+          <button type="submit" className="btn principal pequeno" disabled={enviando || !link.trim()}>{enviando ? 'Anexando…' : 'Anexar link'}</button>
+        </form>
+      ) : <>
       <button type="button" className="material-soltar" onClick={() => entrada.current?.click()} disabled={enviando}>
         <Icone nome="clipe" tamanho={18} />
         <span><strong>{enviando ? 'Enviando…' : acao}</strong>
           <span>{dica}</span></span>
       </button>
       <input ref={entrada} type="file" hidden multiple onChange={(e) => { if (e.target.files) receber(e.target.files); e.target.value = ''; }} />
+      </>}
       </>}
       {recusa && <p className="erro-campo" role="status">{recusa}</p>}
     </div>

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
+import type { Anotacao, Modelo, Pessoa, Rascunho } from '../shared/dominio';
 import {
   CONFIG_PADRAO, NOME_PRIORIDADE, NOME_STATUS,
   type Anexo, type Cliente, type Config, type PapelAnexo, type Demanda, type Prioridade, type PrioridadeDemanda, type Status, type Tarefa,
@@ -8,9 +9,10 @@ import {
 type Linha = Record<string, string | number | null>;
 const agora = () => new Date().toISOString();
 // Sem a coluna dos bytes: a lista de tarefas não carrega os arquivos.
-const CAMPOS_ANEXO = 'id, tarefa_id, nome, tipo, tamanho, papel';
+const CAMPOS_ANEXO = 'id, tarefa_id, nome, tipo, tamanho, papel, url';
 
 export interface NovaTarefa {
+  modelo?: Modelo;
   titulo: string;
   notas?: string;
   cliente?: string;
@@ -22,6 +24,8 @@ export interface NovaTarefa {
 }
 export interface NovaDemanda { descricao: string; origem?: string; prioridade?: PrioridadeDemanda }
 export type CamposTarefa = Partial<Pick<Tarefa, 'titulo' | 'notas' | 'cliente' | 'tipo' | 'prioridade' | 'prazo'>>;
+/** No Rápido não existe cliente (o tipo é opcional): se chegar cliente, é descartado. */
+const SO_PROJETO: (keyof CamposTarefa)[] = ['cliente'];
 
 export class Repositorio {
   /** `relogio` existe para os testes do cronômetro controlarem o tempo. */
@@ -49,13 +53,14 @@ export class Repositorio {
     const id = String(l.id);
     return {
       id,
+      modelo: (l.modelo as Modelo) ?? 'projeto',
       titulo: String(l.titulo), notas: String(l.notas), cliente: String(l.cliente), tipo: String(l.tipo),
       prioridade: l.prioridade as Prioridade, prazo: (l.prazo as string) ?? null, status: l.status as Status,
       concluidoEm: (l.concluido_em as string) ?? null, arquivadaEm: (l.arquivada_em as string) ?? null,
       criadoEm: String(l.criado_em), atualizadoEm: String(l.atualizado_em),
       checklist: checklist.filter((c) => c.tarefa_id === id).map((c) => ({ id: String(c.id), texto: String(c.texto), feito: Number(c.feito) === 1 })),
       eventos: eventos.filter((c) => c.tarefa_id === id).map((c) => ({ em: String(c.em), texto: String(c.texto) })),
-      anexos: anexos.filter((c) => c.tarefa_id === id).map((c): Anexo => ({ id: String(c.id), nome: String(c.nome), tipo: String(c.tipo), tamanho: Number(c.tamanho), papel: c.papel as PapelAnexo })),
+      anexos: anexos.filter((c) => c.tarefa_id === id).map((c): Anexo => ({ id: String(c.id), nome: String(c.nome), tipo: String(c.tipo), tamanho: Number(c.tamanho), papel: c.papel as PapelAnexo, url: (c.url as string) ?? null })),
     };
   }
 
@@ -79,12 +84,12 @@ export class Repositorio {
   }
 
   criarTarefa(n: NovaTarefa): Tarefa {
-    const id = randomUUID(), t = agora(), status = n.status ?? 'a_fazer';
+    const id = randomUUID(), t = agora(), status = n.status ?? 'a_fazer', rapido = n.modelo === 'rapido';
     this.emTransacao(() => {
-      this.db.prepare(`INSERT INTO tarefas (id, titulo, notas, cliente, tipo, prioridade, prazo, status, concluido_em, criado_em, atualizado_em)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-        id, n.titulo, n.notas ?? '', n.cliente ?? '', n.tipo ?? '', n.prioridade ?? 'normal', n.prazo ?? null, status,
-        status === 'concluido' ? t : null, t, t);
+      this.db.prepare(`INSERT INTO tarefas (id, modelo, titulo, notas, cliente, tipo, prioridade, prazo, status, concluido_em, criado_em, atualizado_em)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        id, rapido ? 'rapido' : 'projeto', n.titulo, n.notas ?? '', rapido ? '' : n.cliente ?? '', n.tipo ?? '',
+        n.prioridade ?? 'normal', n.prazo ?? null, status, status === 'concluido' ? t : null, t, t);
       (n.checklist ?? []).forEach((texto, i) => this.db.prepare('INSERT INTO checklist (id, tarefa_id, texto, posicao) VALUES (?, ?, ?, ?)').run(randomUUID(), id, texto, i));
       this.registrar(id, 'Criou a tarefa');
     });
@@ -94,6 +99,7 @@ export class Repositorio {
   atualizarTarefa(id: string, campos: CamposTarefa): Tarefa | null {
     const atual = this.obterTarefa(id);
     if (!atual) return null;
+    if (atual.modelo === 'rapido') for (const k of SO_PROJETO) delete campos[k];
     const colunas: Record<keyof CamposTarefa, string> = { titulo: 'titulo', notas: 'notas', cliente: 'cliente', tipo: 'tipo', prioridade: 'prioridade', prazo: 'prazo' };
     const mudancas = (Object.keys(campos) as (keyof CamposTarefa)[]).filter((k) => campos[k] !== undefined && campos[k] !== atual[k]);
     if (!mudancas.length) return atual;
@@ -148,6 +154,14 @@ export class Repositorio {
     return this.obterTarefa(tarefaId);
   }
 
+  /** Corrige o texto de um item do checklist. */
+  editarItem(tarefaId: string, itemId: string, texto: string): Tarefa | null {
+    const r = this.db.prepare('UPDATE checklist SET texto = ? WHERE id = ? AND tarefa_id = ?').run(texto, itemId, tarefaId);
+    if (!Number(r.changes)) return null;
+    this.tocar(tarefaId);
+    return this.obterTarefa(tarefaId);
+  }
+
   marcarItem(tarefaId: string, itemId: string, feito: boolean): Tarefa | null {
     const r = this.db.prepare('UPDATE checklist SET feito = ? WHERE id = ? AND tarefa_id = ?').run(feito ? 1 : 0, itemId, tarefaId);
     if (!Number(r.changes)) return null;
@@ -164,17 +178,18 @@ export class Repositorio {
 
   // ---------- anexos ----------
 
-  adicionarAnexo(tarefaId: string, nome: string, tipo: string, dados: Uint8Array, papel: PapelAnexo = 'material'): Tarefa | null {
+  /** Arquivo, ou link quando vem `url` (aí os bytes ficam vazios). */
+  adicionarAnexo(tarefaId: string, nome: string, tipo: string, dados: Uint8Array, papel: PapelAnexo = 'material', url: string | null = null): Tarefa | null {
     if (!this.obterTarefa(tarefaId)) return null;
-    this.db.prepare('INSERT INTO anexos (id, tarefa_id, nome, tipo, tamanho, dados, criado_em, papel) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(randomUUID(), tarefaId, nome, tipo, dados.length, dados, agora(), papel);
+    this.db.prepare('INSERT INTO anexos (id, tarefa_id, nome, tipo, tamanho, dados, criado_em, papel, url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(randomUUID(), tarefaId, nome, tipo, dados.length, dados, agora(), papel, url);
     this.tocar(tarefaId);
     this.registrar(tarefaId, `${papel === 'referencia' ? 'Adicionou referência' : 'Adicionou material'}: ${nome}`);
     return this.obterTarefa(tarefaId);
   }
 
-  obterAnexo(id: string): { nome: string; tipo: string; dados: Uint8Array } | null {
-    const a = this.db.prepare('SELECT nome, tipo, dados FROM anexos WHERE id = ?').get(id) as { nome: string; tipo: string; dados: Uint8Array } | undefined;
+  obterAnexo(id: string): { nome: string; tipo: string; dados: Uint8Array; url: string | null } | null {
+    const a = this.db.prepare('SELECT nome, tipo, dados, url FROM anexos WHERE id = ?').get(id) as { nome: string; tipo: string; dados: Uint8Array; url: string | null } | undefined;
     return a ?? null;
   }
 
@@ -191,7 +206,7 @@ export class Repositorio {
     return (this.db.prepare('SELECT * FROM demandas ORDER BY capturada_em DESC').all() as Linha[]).map((d) => ({
       id: String(d.id), descricao: String(d.descricao), origem: String(d.origem), prioridade: d.prioridade as PrioridadeDemanda,
       capturadaEm: String(d.capturada_em), iniciadaEm: (d.iniciada_em as string) ?? null,
-      tempoMs: Number(d.tempo_ms), concluidaEm: (d.concluida_em as string) ?? null,
+      tempoMs: Number(d.tempo_ms), concluidaEm: (d.concluida_em as string) ?? null, registro: String(d.registro ?? ''),
     }));
   }
 
@@ -233,15 +248,20 @@ export class Repositorio {
     return true;
   }
 
-  /** Encerra o cronômetro, guarda o tempo total e a hora de conclusão. A demanda fica no histórico. */
-  concluirDemanda(id: string): boolean {
+  /** Encerra o cronômetro, guarda o tempo total, a hora de conclusão e o registro (o que foi feito). A demanda fica no histórico. */
+  concluirDemanda(id: string, registro = ''): boolean {
     if (!this.demandaAberta(id)) return false;
     const t = this.relogio();
     this.emTransacao(() => {
       this.fecharTrecho(id, t);
-      this.db.prepare('UPDATE demandas SET concluida_em = ? WHERE id = ?').run(t.toISOString(), id);
+      this.db.prepare('UPDATE demandas SET concluida_em = ?, registro = ? WHERE id = ?').run(t.toISOString(), registro, id);
     });
     return true;
+  }
+
+  /** Escreve ou corrige o registro depois (inclusive em demanda já concluída). */
+  registrarDemanda(id: string, registro: string): boolean {
+    return Number(this.db.prepare('UPDATE demandas SET registro = ? WHERE id = ?').run(registro, id).changes) > 0;
   }
 
   // ---------- clientes e configuração ----------
@@ -274,5 +294,77 @@ export class Repositorio {
     const stmt = this.db.prepare('INSERT INTO config (chave, valor) VALUES (?, ?) ON CONFLICT (chave) DO UPDATE SET valor = excluded.valor');
     for (const [k, v] of Object.entries(campos)) if (v !== undefined) stmt.run(k, JSON.stringify(v));
     return this.obterConfig();
+  }
+
+  // ---------- rascunhos de ideias ----------
+
+  /** Do mais recentemente editado para o mais antigo. */
+  listarRascunhos(): Rascunho[] {
+    return (this.db.prepare('SELECT * FROM rascunhos ORDER BY atualizado_em DESC, rowid DESC').all() as Linha[]).map((l) => this.rascunho(l));
+  }
+
+  private rascunho(l: Linha): Rascunho {
+    return { id: String(l.id), titulo: String(l.titulo), conteudo: String(l.conteudo),
+      vinculo: l.vinculo_tipo ? { tipo: l.vinculo_tipo as 'cliente' | 'tarefa', id: String(l.vinculo_id) } : null,
+      criadoEm: String(l.criado_em), atualizadoEm: String(l.atualizado_em) };
+  }
+
+  criarRascunho(titulo: string, conteudo: string): Rascunho {
+    const id = randomUUID(), t = this.relogio().toISOString();
+    this.db.prepare('INSERT INTO rascunhos (id, titulo, conteudo, criado_em, atualizado_em) VALUES (?, ?, ?, ?, ?)').run(id, titulo, conteudo, t, t);
+    return this.rascunho(this.db.prepare('SELECT * FROM rascunhos WHERE id = ?').get(id) as Linha);
+  }
+
+  /** Só os campos enviados mudam; vínculo `null` remove. Renova a data de edição. */
+  atualizarRascunho(id: string, campos: { titulo?: string; conteudo?: string; vinculo?: Rascunho['vinculo'] }): Rascunho | null {
+    const atual = this.db.prepare('SELECT * FROM rascunhos WHERE id = ?').get(id) as Linha | undefined;
+    if (!atual) return null;
+    const v = campos.vinculo === undefined ? (atual.vinculo_tipo ? { tipo: atual.vinculo_tipo, id: atual.vinculo_id } : null) : campos.vinculo;
+    this.db.prepare('UPDATE rascunhos SET titulo = ?, conteudo = ?, vinculo_tipo = ?, vinculo_id = ?, atualizado_em = ? WHERE id = ?')
+      .run(campos.titulo ?? String(atual.titulo), campos.conteudo ?? String(atual.conteudo), v?.tipo ?? null, v?.id ?? null, this.relogio().toISOString(), id);
+    return this.rascunho(this.db.prepare('SELECT * FROM rascunhos WHERE id = ?').get(id) as Linha);
+  }
+
+  excluirRascunho(id: string): boolean {
+    return Number(this.db.prepare('DELETE FROM rascunhos WHERE id = ?').run(id).changes) > 0;
+  }
+
+  // ---------- bloco de notas por pessoa ----------
+
+  /** Tudo do bloco de notas de uma vez: pessoas por nome e anotações da mais nova para a mais antiga. */
+  listarNotas(): { pessoas: Pessoa[]; anotacoes: Anotacao[] } {
+    const pessoas = this.db.prepare('SELECT id, nome FROM pessoas ORDER BY nome COLLATE NOCASE').all() as unknown as Pessoa[];
+    const anotacoes = (this.db.prepare('SELECT * FROM anotacoes ORDER BY criado_em DESC, rowid DESC').all() as Linha[]).map((l) => this.anotacao(l));
+    return { pessoas, anotacoes };
+  }
+
+  private anotacao(l: Linha): Anotacao {
+    return { id: String(l.id), pessoaId: String(l.pessoa_id), titulo: String(l.titulo), conteudo: String(l.conteudo), criadoEm: String(l.criado_em), atualizadoEm: String(l.atualizado_em) };
+  }
+
+  /** Nome repetido (sem diferença de maiúsculas) devolve null. */
+  criarPessoa(nome: string): Pessoa | null {
+    if (this.db.prepare('SELECT 1 FROM pessoas WHERE nome = ? COLLATE NOCASE').get(nome)) return null;
+    const id = randomUUID();
+    this.db.prepare('INSERT INTO pessoas (id, nome, criado_em) VALUES (?, ?, ?)').run(id, nome, this.relogio().toISOString());
+    return { id, nome };
+  }
+
+  criarAnotacao(pessoaId: string, titulo: string, conteudo: string): Anotacao | null {
+    if (!this.db.prepare('SELECT 1 FROM pessoas WHERE id = ?').get(pessoaId)) return null;
+    const id = randomUUID(), t = this.relogio().toISOString();
+    this.db.prepare('INSERT INTO anotacoes (id, pessoa_id, titulo, conteudo, criado_em, atualizado_em) VALUES (?, ?, ?, ?, ?, ?)').run(id, pessoaId, titulo, conteudo, t, t);
+    return this.anotacao(this.db.prepare('SELECT * FROM anotacoes WHERE id = ?').get(id) as Linha);
+  }
+
+  /** Edita no lugar: mantém a pessoa e a data de criação, e só renova a de atualização. */
+  atualizarAnotacao(id: string, titulo: string, conteudo: string): Anotacao | null {
+    const r = this.db.prepare('UPDATE anotacoes SET titulo = ?, conteudo = ?, atualizado_em = ? WHERE id = ?').run(titulo, conteudo, this.relogio().toISOString(), id);
+    if (!Number(r.changes)) return null;
+    return this.anotacao(this.db.prepare('SELECT * FROM anotacoes WHERE id = ?').get(id) as Linha);
+  }
+
+  excluirAnotacao(id: string): boolean {
+    return Number(this.db.prepare('DELETE FROM anotacoes WHERE id = ?').run(id).changes) > 0;
   }
 }

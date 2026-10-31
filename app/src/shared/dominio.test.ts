@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { deslocarPeriodo, periodoDe, registrosDoPeriodo, textoRelatorio, type Demanda, type Tarefa } from './dominio';
-import { diasParaArquivar, estadoDemanda, estaArquivada, formatarDuracao, ordenarTarefas, situacaoPrazo, somarDias, tempoDemanda } from './dominio';
+import { diasParaArquivar, estadoDemanda, estaArquivada, formatarDuracao, ordenarTarefas, situacaoPrazo, somarDias, somarDiasUteis, tempoDemanda } from './dominio';
 
 const HOJE = '2026-10-21';
 const concluidaHa = (dias: number) => { const d = new Date(2026, 9, 21, 15, 0); d.setDate(d.getDate() - dias); return d.toISOString(); };
@@ -101,5 +101,14 @@ describe('histórico por período', () => {
       '- [Não planejada] Trocar foto (pedido por Gestor · 25 min)',
       '- Carrossel (Aurora · Post)',
     ].join('\n'));
+  });
+});
+
+describe('prazo padrão em dias úteis', () => {
+  it('pula sábado e domingo', () => {
+    expect(somarDiasUteis('2026-10-26', 3)).toBe('2026-10-29'); // segunda → quinta
+    expect(somarDiasUteis('2026-10-28', 3)).toBe('2026-11-02'); // quarta → segunda
+    expect(somarDiasUteis('2026-10-30', 3)).toBe('2026-11-04'); // sexta → quarta
+    expect(somarDiasUteis('2026-10-31', 3)).toBe('2026-11-04'); // sábado → quarta
   });
 });
