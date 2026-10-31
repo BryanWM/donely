@@ -57,6 +57,14 @@ export function DicasIA() {
           A versão que não foi copiada antes do bloqueio fica no chat bloqueado.
         </p>
       </section>
+
+      <section className="grupo-ios">
+        <h3 className="grupo-titulo">Ajustar um prompt</h3>
+        <p className="grupo-nota">
+          Para mudar uma regra, peça a mudança no próprio chat: a IA ajusta sem organizar nada. Depois, peça <code>passa o prompt a limpo</code> para
+          receber o prompt completo e atualizado, e guarde essa versão (por exemplo, numa ideia do Caderno) para usar num chat novo.
+        </p>
+      </section>
     </>
   );
 }
