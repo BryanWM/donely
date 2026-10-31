@@ -109,6 +109,8 @@ const MIGRACOES: string[] = [
    );`,
   // Modelo do card: Projeto (completo) ou Rápido (mínimo). Os registros anteriores ficam como Projeto.
   `ALTER TABLE tarefas ADD COLUMN modelo TEXT NOT NULL DEFAULT 'projeto' CHECK (modelo IN ('projeto', 'rapido'));`,
+  // Tags de ideias (ex.: "Executado", "Na ideia"): lista em JSON.
+  `ALTER TABLE rascunhos ADD COLUMN tags TEXT NOT NULL DEFAULT '[]';`,
 ];
 
 /** Abre (ou cria) o banco e aplica as migrações pendentes. Use ':memory:' nos testes. */

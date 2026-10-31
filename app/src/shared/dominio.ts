@@ -96,9 +96,27 @@ export function formatarDuracao(ms: number, comSegundos = false): string {
 
 /** Bloco de notas: alguém com quem se conversa, e o que ficou registrado de cada conversa. */
 export interface Pessoa { id: string; nome: string }
-/** Rascunho de ideia: pensar primeiro, organizar depois. O vínculo (cliente ou tarefa) é opcional e pode vir depois. */
-export interface Rascunho { id: string; titulo: string; conteudo: string; vinculo: { tipo: 'cliente' | 'tarefa'; id: string } | null; criadoEm: string; atualizadoEm: string }
+/** Rascunho de ideia: pensar primeiro, organizar depois. O vínculo (cliente ou tarefa) é opcional e pode vir depois; as tags são livres (ex.: "Executado", "Na ideia"). */
+export interface Rascunho { id: string; titulo: string; conteudo: string; tags: string[]; vinculo: { tipo: 'cliente' | 'tarefa'; id: string } | null; criadoEm: string; atualizadoEm: string }
+/** As duas tags de situação: marcar uma desmarca a outra. */
+export const TAGS_SITUACAO = ['Na ideia', 'Executado'] as const;
 export interface Anotacao { id: string; pessoaId: string; titulo: string; conteudo: string; criadoEm: string; /** Igual a criadoEm até a primeira edição. */ atualizadoEm: string }
+
+/** A versão instalada contra a branch main do GitHub. */
+export interface InfoVersao {
+  /** Versão instalada (MAJOR.MINOR.PATCH, de app/package.json). */
+  atual?: string;
+  desatualizada: boolean;
+  /** Pasta do projeto, para o comando de atualizar. */
+  pasta?: string;
+  /** Onde o servidor está rodando: sugere o terminal na janela de atualização. */
+  sistema?: 'wsl' | 'linux' | 'macos' | 'windows';
+  /** Versão que está na main, quando dá para ler. */
+  disponivel?: string;
+  /** Quantos commits da main esta cópia não tem, e os títulos dos mais recentes (até 20). */
+  faltam?: number;
+  alteracoes?: { hash: string; titulo: string }[];
+}
 
 export type Tema = 'claro' | 'escuro' | 'auto';
 export interface Config {

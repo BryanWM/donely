@@ -65,6 +65,18 @@ describe('clientes e configuração', () => {
   });
 });
 
+describe('ideias', () => {
+  it('guarda as tags da ideia e devolve junto com ela', async () => {
+    const r = await (await pedir('POST', '/rascunhos', {})).json();
+    expect(r.tags).toEqual([]);
+    const salvo = await (await pedir('PATCH', `/rascunhos/${r.id}`, { tags: ['Na ideia', 'roteiro'] })).json();
+    expect(salvo.tags).toEqual(['Na ideia', 'roteiro']);
+    expect((await (await pedir('GET', '/rascunhos')).json())[0].tags).toEqual(['Na ideia', 'roteiro']);
+    // mandar outro campo não apaga as tags
+    expect((await (await pedir('PATCH', `/rascunhos/${r.id}`, { titulo: 'Ideia' })).json()).tags).toEqual(['Na ideia', 'roteiro']);
+  });
+});
+
 describe('proteção do servidor local', () => {
   it('recusa pedidos de outro site aberto no navegador', async () => {
     const r = await pedir('POST', '/tarefas', { titulo: 'x' }, { ...LOCAL, origin: 'https://site-malicioso.com' });
@@ -275,14 +287,12 @@ describe('atalho na área de trabalho', () => {
 });
 
 describe('versão', () => {
-  it('sem git responde que está em dia; com versão nova avisa; erro fica em silêncio; guarda por 1 hora', async () => {
+  it('sem git responde que está em dia; com versão nova avisa com os detalhes; erro fica em silêncio', async () => {
     expect(await (await pedir('GET', '/versao')).json()).toEqual({ desatualizada: false });
 
-    let consultas = 0;
-    api = criarApi(new Repositorio(abrirBanco(':memory:')), { versao: async () => { consultas++; return { desatualizada: true, pasta: '/home/ana/donely' }; } });
-    expect(await (await pedir('GET', '/versao')).json()).toEqual({ desatualizada: true, pasta: '/home/ana/donely' });
-    await pedir('GET', '/versao');
-    expect(consultas).toBe(1); // a segunda vem da memória
+    const info = { atual: '1.0.0', desatualizada: true, pasta: '/home/ana/donely', disponivel: '1.1.0', faltam: 1, alteracoes: [{ hash: 'abc1234', titulo: 'feat: tags' }] };
+    api = criarApi(new Repositorio(abrirBanco(':memory:')), { versao: async () => info });
+    expect(await (await pedir('GET', '/versao')).json()).toEqual(info);
 
     api = criarApi(new Repositorio(abrirBanco(':memory:')), { versao: async () => { throw new Error('sem internet'); } });
     const r = await pedir('GET', '/versao');

@@ -304,7 +304,7 @@ export class Repositorio {
   }
 
   private rascunho(l: Linha): Rascunho {
-    return { id: String(l.id), titulo: String(l.titulo), conteudo: String(l.conteudo),
+    return { id: String(l.id), titulo: String(l.titulo), conteudo: String(l.conteudo), tags: JSON.parse(String(l.tags)) as string[],
       vinculo: l.vinculo_tipo ? { tipo: l.vinculo_tipo as 'cliente' | 'tarefa', id: String(l.vinculo_id) } : null,
       criadoEm: String(l.criado_em), atualizadoEm: String(l.atualizado_em) };
   }
@@ -316,12 +316,13 @@ export class Repositorio {
   }
 
   /** Só os campos enviados mudam; vínculo `null` remove. Renova a data de edição. */
-  atualizarRascunho(id: string, campos: { titulo?: string; conteudo?: string; vinculo?: Rascunho['vinculo'] }): Rascunho | null {
+  atualizarRascunho(id: string, campos: { titulo?: string; conteudo?: string; vinculo?: Rascunho['vinculo']; tags?: string[] }): Rascunho | null {
     const atual = this.db.prepare('SELECT * FROM rascunhos WHERE id = ?').get(id) as Linha | undefined;
     if (!atual) return null;
     const v = campos.vinculo === undefined ? (atual.vinculo_tipo ? { tipo: atual.vinculo_tipo, id: atual.vinculo_id } : null) : campos.vinculo;
-    this.db.prepare('UPDATE rascunhos SET titulo = ?, conteudo = ?, vinculo_tipo = ?, vinculo_id = ?, atualizado_em = ? WHERE id = ?')
-      .run(campos.titulo ?? String(atual.titulo), campos.conteudo ?? String(atual.conteudo), v?.tipo ?? null, v?.id ?? null, this.relogio().toISOString(), id);
+    this.db.prepare('UPDATE rascunhos SET titulo = ?, conteudo = ?, vinculo_tipo = ?, vinculo_id = ?, tags = ?, atualizado_em = ? WHERE id = ?')
+      .run(campos.titulo ?? String(atual.titulo), campos.conteudo ?? String(atual.conteudo), v?.tipo ?? null, v?.id ?? null,
+        JSON.stringify(campos.tags ?? JSON.parse(String(atual.tags))), this.relogio().toISOString(), id);
     return this.rascunho(this.db.prepare('SELECT * FROM rascunhos WHERE id = ?').get(id) as Linha);
   }
 

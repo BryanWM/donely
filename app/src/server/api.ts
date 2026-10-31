@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
-import { diaLocal, LIMITE_ANEXO, MODELOS, OPCOES_ARQUIVAR, PRIORIDADES, PRIORIDADES_DEMANDA, STATUS, TIPOS_PREVIA } from '../shared/dominio';
+import { diaLocal, LIMITE_ANEXO, MODELOS, OPCOES_ARQUIVAR, PRIORIDADES, PRIORIDADES_DEMANDA, STATUS, TIPOS_PREVIA, type InfoVersao } from '../shared/dominio';
 import type { Repositorio } from './repositorio';
 
 const dia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use a data no formato AAAA-MM-DD');
@@ -40,8 +40,7 @@ const LOCAL = new Set(['127.0.0.1', 'localhost', '[::1]']);
  * `sistema` traz o que depende de onde o app roda: `desligar` só quando aberto pelo atalho (scripts/iniciar.sh),
  * `criarAtalho` só no WSL (cria o ícone na área de trabalho do Windows e devolve onde ficou).
  */
-export interface Versao { desatualizada: boolean; pasta?: string }
-export interface Sistema { desligar?: () => void; criarAtalho?: () => Promise<string>; versao?: () => Promise<Versao> }
+export interface Sistema { desligar?: () => void; criarAtalho?: () => Promise<string>; versao?: () => Promise<InfoVersao> }
 export function criarApi(repo: Repositorio, { desligar, criarAtalho, versao }: Sistema = {}) {
   const api = new Hono();
 
@@ -61,15 +60,11 @@ export function criarApi(repo: Repositorio, { desligar, criarAtalho, versao }: S
     await next();
   });
 
-  // Há versão nova no repositório? Sem internet, sem git ou sem acesso: responde que não, em silêncio.
-  // shortcut: guarda a resposta por 1 hora no processo; o app pergunta ao abrir e a cada 6 horas.
-  let ultimaVersao: { em: number; valor: Versao } | null = null;
+  // Há versão nova na main? O servidor confere ao iniciar e a cada hora (atualizacao.ts); aqui só devolve o último resultado.
+  // Sem internet, sem git ou sem acesso: responde que não, em silêncio.
   api.get('/versao', async (c) => {
     if (!versao) return c.json({ desatualizada: false });
-    if (!ultimaVersao || Date.now() - ultimaVersao.em > 3_600_000) {
-      try { ultimaVersao = { em: Date.now(), valor: await versao() }; } catch { return c.json({ desatualizada: false }); }
-    }
-    return c.json(ultimaVersao.valor);
+    try { return c.json(await versao()); } catch { return c.json({ desatualizada: false }); }
   });
   api.get('/estado', (c) => c.json({ tarefas: repo.listarTarefas(), demandas: repo.listarDemandas(), config: repo.obterConfig(), clientes: repo.listarClientes(), desligavel: Boolean(desligar), atalho: Boolean(criarAtalho) }));
   // Responde antes de desligar, para a interface saber que deu certo.
@@ -208,6 +203,7 @@ export function criarApi(repo: Repositorio, { desligar, criarAtalho, versao }: S
   const camposRascunho = z.object({
     titulo: texto(200).optional(), conteudo: z.string().max(200_000).optional(),
     vinculo: z.object({ tipo: z.enum(['cliente', 'tarefa']), id: z.string().min(1).max(100) }).nullable().optional(),
+    tags: z.array(texto(30).min(1)).max(20).optional(),
   });
   api.get('/rascunhos', (c) => c.json(repo.listarRascunhos()));
   api.post('/rascunhos', async (c) => {

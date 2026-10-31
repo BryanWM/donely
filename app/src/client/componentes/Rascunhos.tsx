@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { diaLocal, type Cliente, type Rascunho, type Tarefa } from '../../shared/dominio';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { diaLocal, TAGS_SITUACAO, type Cliente, type Rascunho, type Tarefa } from '../../shared/dominio';
 import type { Acoes } from '../acoes';
 import { api } from '../api';
 import { Icone } from './Icone';
@@ -23,6 +23,7 @@ export function Rascunhos({ tarefas, clientes, hoje, acoes, onAbrir, onAviso, re
   const [aberto, setAberto] = useState<string | null>(null);
   const [renomeando, setRenomeando] = useState<{ id: string; titulo: string } | null>(null);
   const [confirmar, setConfirmar] = useState<string | null>(null);
+  const [filtroTag, setFiltroTag] = useState<string | null>(null);
 
   useEffect(() => { api.rascunhos().then(setLista).catch(() => onAviso('Não foi possível abrir as ideias.', { erro: true })); }, []);
   // sem editor aberto, nada pendente: pode fechar
@@ -64,12 +65,14 @@ export function Rascunhos({ tarefas, clientes, hoje, acoes, onAbrir, onAviso, re
       onVoltar={(r) => {
         setAberto(null);
         // rascunho que ficou vazio não vira lixo no caderno
-        if (!r.titulo.trim() && !r.conteudo.trim()) api.excluirRascunho(r.id).then(() => setLista((l) => (l ?? []).filter((x) => x.id !== r.id))).catch(() => {});
+        if (!r.titulo.trim() && !r.conteudo.trim() && !r.tags.length) api.excluirRascunho(r.id).then(() => setLista((l) => (l ?? []).filter((x) => x.id !== r.id))).catch(() => {});
       }} />;
   }
 
   const q = busca.trim().toLowerCase();
-  const visiveis = (lista ?? []).filter((r) => !q || r.titulo.toLowerCase().includes(q) || r.conteudo.toLowerCase().includes(q));
+  const visiveis = (lista ?? []).filter((r) => (!filtroTag || r.tags.includes(filtroTag))
+    && (!q || r.titulo.toLowerCase().includes(q) || r.conteudo.toLowerCase().includes(q) || r.tags.some((t) => t.toLowerCase().includes(q))));
+  const todasTags = [...new Set((lista ?? []).flatMap((r) => r.tags))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
   return (
     <div className="caderno">
@@ -79,6 +82,15 @@ export function Rascunhos({ tarefas, clientes, hoje, acoes, onAbrir, onAviso, re
           <input type="search" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por título ou conteúdo" /></label>
         <button type="button" className="btn principal" onClick={novo}><Icone nome="mais" />Novo rascunho</button>
       </header>
+
+      {todasTags.length > 0 && (
+        <div className="segmentado tags-filtro" role="radiogroup" aria-label="Filtrar ideias por tag">
+          <button type="button" role="radio" aria-checked={!filtroTag} className={!filtroTag ? 'ativo' : ''} onClick={() => setFiltroTag(null)}>Todas</button>
+          {todasTags.map((t) => (
+            <button key={t} type="button" role="radio" aria-checked={filtroTag === t} className={filtroTag === t ? 'ativo' : ''} onClick={() => setFiltroTag(t)}>{t}</button>
+          ))}
+        </div>
+      )}
 
       {!lista ? <p className="notas-dica">Carregando…</p> : !visiveis.length ? (
         <div className="vazio-grande"><Icone nome="ideia" tamanho={28} />
@@ -102,7 +114,7 @@ export function Rascunhos({ tarefas, clientes, hoje, acoes, onAbrir, onAviso, re
                 <button type="button" className="rascunho-abrir" onClick={() => setAberto(r.id)}>
                   <strong className={r.titulo ? '' : 'sem-titulo'}>{r.titulo || 'Sem título'}</strong>
                   <span className="rascunho-previa">{semMarkdown(r.conteudo).trim() || 'Ainda sem texto.'}</span>
-                  <span className="rascunho-meta">Editado {quando(r.atualizadoEm)} · criado {quando(r.criadoEm)}{r.vinculo && <span className="chip">{nomeVinculo(r.vinculo)}</span>}</span>
+                  <span className="rascunho-meta">Editado {quando(r.atualizadoEm)} · criado {quando(r.criadoEm)}{r.vinculo && <span className="chip">{nomeVinculo(r.vinculo)}</span>}{r.tags.map((t) => <span key={t} className="chip">{t}</span>)}</span>
                 </button>
               )}
               {renomeando?.id !== r.id && (
@@ -214,6 +226,7 @@ function Editor({ rascunho, tarefas, clientes, acoes, onAbrir, onAviso, onSalvo,
       <div className="editor-folha">
         <label className="sr" htmlFor="rascunho-titulo">Título</label>
         <input id="rascunho-titulo" className="editor-titulo" value={titulo} onChange={(e) => mudar({ titulo: e.target.value })} placeholder="Título do rascunho" autoComplete="off" />
+        <TagsRascunho rascunho={rascunho} onSalvo={onSalvo} onAviso={onAviso} />
         <label className="sr" htmlFor="rascunho-texto">Texto do rascunho</label>
         {visualizar ? (
           conteudo.trim() ? <div className="editor-previa" onDoubleClick={() => setVisualizar(false)} title="Clique duas vezes para editar"><Markdown texto={conteudo} /></div>
@@ -230,6 +243,47 @@ function Editor({ rascunho, tarefas, clientes, acoes, onAbrir, onAviso, onSalvo,
         <Transformar trecho={transformar} rascunho={{ ...rascunho, titulo }} tarefas={tarefas} clientes={clientes} acoes={acoes} onAbrir={onAbrir} onAviso={onAviso}
           onFechar={() => setTransformar(null)} />
       )}
+    </div>
+  );
+}
+
+const ehSituacao = (tag: string) => (TAGS_SITUACAO as readonly string[]).includes(tag);
+
+/** Tags da ideia: a situação (Na ideia ou Executado, uma só) e tags livres. Cada mudança salva na hora. */
+function TagsRascunho({ rascunho, onSalvo, onAviso }: { rascunho: Rascunho; onSalvo: (r: Rascunho) => void; onAviso: Props['onAviso'] }) {
+  const [nova, setNova] = useState('');
+  const situacao = rascunho.tags.find(ehSituacao) ?? '';
+  const livres = rascunho.tags.filter((t) => !ehSituacao(t));
+
+  async function gravar(tags: string[]) {
+    try { onSalvo(await api.salvarRascunho(rascunho.id, { tags })); }
+    catch (e) { onAviso(e instanceof Error ? e.message : 'Não foi possível salvar as tags.', { erro: true }); }
+  }
+  const marcarSituacao = (valor: string) => gravar([...livres, ...(valor ? [valor] : [])]);
+  function adicionar(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const t = nova.trim();
+    setNova('');
+    if (!t || rascunho.tags.some((x) => x.toLowerCase() === t.toLowerCase())) return;
+    gravar([...rascunho.tags, t]);
+  }
+
+  return (
+    <div className="tags-rascunho">
+      <div className="segmentado" role="radiogroup" aria-label="Situação da ideia">
+        <button type="button" role="radio" aria-checked={!situacao} className={!situacao ? 'ativo' : ''} onClick={() => marcarSituacao('')}>Sem situação</button>
+        {TAGS_SITUACAO.map((s) => (
+          <button key={s} type="button" role="radio" aria-checked={situacao === s} className={situacao === s ? 'ativo' : ''} onClick={() => marcarSituacao(s)}>{s}</button>
+        ))}
+      </div>
+      {livres.map((t) => (
+        <span key={t} className="chip">{t}
+          <button type="button" onClick={() => gravar(rascunho.tags.filter((x) => x !== t))} aria-label={`Remover a tag ${t}`}><Icone nome="x" tamanho={12} /></button>
+        </span>
+      ))}
+      <label className="sr" htmlFor="tag-nova">Nova tag</label>
+      <input id="tag-nova" className="tag-nova" value={nova} onChange={(e) => setNova(e.target.value)} onKeyDown={adicionar} maxLength={30} placeholder="Nova tag e Enter" autoComplete="off" />
     </div>
   );
 }

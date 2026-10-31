@@ -1,4 +1,4 @@
-import type { Anotacao, Pessoa, Rascunho } from '../shared/dominio';
+import type { Anotacao, InfoVersao, Pessoa, Rascunho } from '../shared/dominio';
 import type { Cliente, Config, Demanda, Modelo, PapelAnexo, Prioridade, PrioridadeDemanda, Status, Tarefa } from '../shared/dominio';
 
 export interface Estado { tarefas: Tarefa[]; demandas: Demanda[]; config: Config; clientes: Cliente[]; /** Aberto pelo atalho: mostra o botão Desligar. */ desligavel: boolean; /** No WSL: as Configurações oferecem criar o atalho na área de trabalho. */ atalho: boolean }
@@ -57,14 +57,14 @@ export const api = {
   notas: () => pedir<{ pessoas: Pessoa[]; anotacoes: Anotacao[] }>('GET', '/notas'),
   rascunhos: () => pedir<Rascunho[]>('GET', '/rascunhos'),
   criarRascunho: () => pedir<Rascunho>('POST', '/rascunhos', {}),
-  salvarRascunho: (id: string, campos: { titulo?: string; conteudo?: string; vinculo?: Rascunho['vinculo'] }) => pedir<Rascunho>('PATCH', `/rascunhos/${id}`, campos),
+  salvarRascunho: (id: string, campos: { titulo?: string; conteudo?: string; vinculo?: Rascunho['vinculo']; tags?: string[] }) => pedir<Rascunho>('PATCH', `/rascunhos/${id}`, campos),
   excluirRascunho: (id: string) => pedir<void>('DELETE', `/rascunhos/${id}`),
   criarPessoa: (nome: string) => pedir<Pessoa>('POST', '/pessoas', { nome }),
   criarAnotacao: (pessoaId: string, d: { titulo: string; conteudo: string }) => pedir<Anotacao>('POST', `/pessoas/${pessoaId}/anotacoes`, d),
   editarAnotacao: (id: string, d: { titulo: string; conteudo: string }) => pedir<Anotacao>('PATCH', `/anotacoes/${id}`, d),
   excluirAnotacao: (id: string) => pedir<void>('DELETE', `/anotacoes/${id}`),
   desligar: () => pedir<void>('POST', '/desligar'),
-  versao: () => pedir<{ desatualizada: boolean; pasta?: string }>('GET', '/versao'),
+  versao: () => pedir<InfoVersao>('GET', '/versao'),
   criarAtalho: () => pedir<{ caminho: string }>('POST', '/atalho'),
   removerAnexo: (id: string, anexo: string) => pedir<Tarefa>('DELETE', `/tarefas/${id}/anexos/${anexo}`),
   salvarConfig: (campos: Partial<Config>) => pedir<Config>('PATCH', '/config', campos),
